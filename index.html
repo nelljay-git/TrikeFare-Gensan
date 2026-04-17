@@ -1,0 +1,3052 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <meta name="description"
+    content="TrikeFare Gensan - GPS-based tricycle fare calculator for General Santos City commuters">
+  <title>TrikeFare Gensan</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    *,
+    *::before,
+    *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0
+    }
+
+    :root {
+      --bg: #0a0e1a;
+      --surface: #131829;
+      --card: #1a2035;
+      --border: #2a3050;
+      --primary: #00d4aa;
+      --primary-glow: #00d4aa33;
+      --primary-dark: #00a885;
+      --accent: #6c5ce7;
+      --danger: #ff6b6b;
+      --danger-glow: #ff6b6b33;
+      --warning: #f0a500;
+      --warning-glow: #f0a50033;
+      --text: #e8ecf4;
+      --text-dim: #8892a8;
+      --text-muted: #5a6478;
+      --radius: 16px;
+      --radius-sm: 10px;
+    }
+
+    html,
+    body {
+      height: 100%;
+      font-family: 'Inter', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      overflow: hidden
+    }
+
+    #app {
+      display: flex;
+      flex-direction: column;
+      height: 100dvh;
+      position: relative
+    }
+
+    /* MAP WRAPPER */
+    .map-wrapper {
+      flex: 1;
+      min-height: 45vh;
+      position: relative;
+      z-index: 1;
+    }
+
+    /* MAP */
+    #map {
+      width: 100%;
+      height: 100%;
+      background: #0d1117
+    }
+
+    .leaflet-touch .leaflet-control-layers,
+    .leaflet-touch .leaflet-bar {
+      margin-top: 80px;
+    }
+
+    .leaflet-control-zoom {
+      border: none !important;
+    }
+
+    .leaflet-control-zoom a {
+      background: var(--card) !important;
+      color: var(--text) !important;
+      border: 1px solid var(--border) !important;
+      border-radius: 8px !important;
+      width: 34px !important;
+      height: 34px !important;
+      line-height: 34px !important;
+      font-size: 16px !important;
+
+    }
+
+    .leaflet-control-zoom a:first-child {
+      border-radius: 8px 8px 0 0 !important
+    }
+
+    .leaflet-control-zoom a:last-child {
+      border-radius: 0 0 8px 8px !important
+    }
+
+    /* BOTTOM PANEL */
+    #panel {
+      position: relative;
+      z-index: 10;
+      background: var(--surface);
+      border-top: 1px solid var(--border);
+      border-radius: 24px 24px 0 0;
+      margin-top: -20px;
+      padding: 12px 20px 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      max-height: 55vh;
+      overflow-y: auto;
+      box-shadow: 0 -10px 40px rgba(0, 0, 0, .5);
+      transition: max-height 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
+    }
+
+    #panel.collapsed {
+      max-height: 200px;
+      overflow: hidden;
+    }
+
+    #panel::-webkit-scrollbar {
+      width: 4px
+    }
+
+    #panel::-webkit-scrollbar-thumb {
+      background: var(--border);
+      border-radius: 4px
+    }
+
+    .drag-handle {
+      width: 40px;
+      height: 4px;
+      background: var(--border);
+      border-radius: 4px;
+      margin: 0 auto 4px;
+      cursor: pointer;
+    }
+
+    /* HEADER */
+    .app-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      cursor: pointer;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .app-title {
+      font-size: 1.15rem;
+      font-weight: 800;
+      background: linear-gradient(135deg, var(--primary), var(--accent));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent
+    }
+
+    .app-badge {
+      font-size: .65rem;
+      background: var(--accent);
+      color: #fff;
+      padding: 2px 8px;
+      border-radius: 20px;
+      font-weight: 600
+    }
+
+    /* LIVE STATS */
+    .live-stats {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 10px
+    }
+
+    .stat-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 12px 14px;
+      text-align: center;
+      transition: all .3s
+    }
+
+    .stat-card.active {
+      border-color: var(--primary);
+      box-shadow: 0 0 20px var(--primary-glow)
+    }
+
+    .stat-label {
+      font-size: .7rem;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: .5px;
+      font-weight: 600
+    }
+
+    .stat-value {
+      font-size: 1.6rem;
+      font-weight: 800;
+      margin-top: 2px;
+      font-variant-numeric: tabular-nums
+    }
+
+    .stat-value.fare {
+      color: var(--primary)
+    }
+
+    .stat-unit {
+      font-size: .75rem;
+      color: var(--text-dim);
+      font-weight: 500
+    }
+
+    /* BUTTONS */
+    .btn-row {
+      display: flex;
+      gap: 10px
+    }
+
+    .btn {
+      flex: 1;
+      padding: 14px;
+      border: none;
+      border-radius: var(--radius-sm);
+      font-family: inherit;
+      font-size: .95rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all .2s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .btn::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(180deg, rgba(255, 255, 255, .08), transparent);
+      pointer-events: none
+    }
+
+    .btn-start {
+      background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+      color: #000;
+      box-shadow: 0 4px 20px var(--primary-glow)
+    }
+
+    .btn-start:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 6px 30px var(--primary-glow)
+    }
+
+    .btn-start:active {
+      transform: translateY(1px)
+    }
+
+    .btn-stop {
+      background: linear-gradient(135deg, var(--danger), #e55);
+      color: #fff;
+      box-shadow: 0 4px 20px var(--danger-glow)
+    }
+
+    .btn-stop:hover {
+      transform: translateY(-1px)
+    }
+
+    .btn-reset {
+      background: var(--card);
+      border: 1px solid var(--border);
+      color: var(--text-dim)
+    }
+
+    .btn-reset:hover {
+      border-color: var(--text-muted);
+      color: var(--text)
+    }
+
+    .btn:disabled {
+      opacity: .4;
+      cursor: not-allowed;
+      transform: none !important
+    }
+
+    .btn .icon {
+      font-size: 1.1rem
+    }
+
+    /* STATUS */
+    .status-bar {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: .78rem;
+      color: var(--text-muted)
+    }
+
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--text-muted);
+      flex-shrink: 0
+    }
+
+    .status-dot.tracking {
+      background: var(--primary);
+      animation: pulse 1.5s infinite
+    }
+
+    .status-dot.error {
+      background: var(--danger)
+    }
+
+    @keyframes pulse {
+
+      0%,
+      100% {
+        opacity: 1;
+        box-shadow: 0 0 0 0 var(--primary-glow)
+      }
+
+      50% {
+        opacity: .7;
+        box-shadow: 0 0 0 6px transparent
+      }
+    }
+
+    /* RESULTS CARD */
+    .results-card {
+      background: linear-gradient(135deg, var(--card), #1e2845);
+      border: 1px solid var(--primary);
+      border-radius: var(--radius);
+      padding: 16px;
+      display: none;
+      animation: slideUp .4s ease;
+    }
+
+    .results-card.show {
+      display: block
+    }
+
+    .results-title {
+      font-size: .85rem;
+      font-weight: 700;
+      color: var(--primary);
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      gap: 6px
+    }
+
+    .results-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin-bottom: 12px
+    }
+
+    .result-item {
+      background: rgba(0, 0, 0, .25);
+      border-radius: 8px;
+      padding: 10px;
+      text-align: center
+    }
+
+    .result-label {
+      font-size: .65rem;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: .5px
+    }
+
+    .result-value {
+      font-size: 1.3rem;
+      font-weight: 800;
+      margin-top: 2px
+    }
+
+    .disclaimer {
+      font-size: .68rem;
+      color: var(--text-muted);
+      line-height: 1.5;
+      padding: 8px;
+      background: rgba(0, 0, 0, .2);
+      border-radius: 8px;
+      border-left: 3px solid var(--accent)
+    }
+
+    /* MANUAL FALLBACK */
+    .manual-section {
+      display: none
+    }
+
+    .manual-section.show {
+      display: block
+    }
+
+    .manual-title {
+      font-size: .85rem;
+      font-weight: 700;
+      color: var(--accent);
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      gap: 6px
+    }
+
+    .select-wrap {
+      position: relative
+    }
+
+    .select-wrap select {
+      width: 100%;
+      padding: 12px 14px;
+      background: var(--card);
+      color: var(--text);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      font-family: inherit;
+      font-size: .85rem;
+      appearance: none;
+      cursor: pointer;
+    }
+
+    .select-wrap::after {
+      content: '▾';
+      position: absolute;
+      right: 14px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--text-muted);
+      pointer-events: none
+    }
+
+    .manual-result {
+      margin-top: 10px;
+      padding: 12px;
+      background: var(--card);
+      border-radius: var(--radius-sm);
+      display: none;
+      text-align: center
+    }
+
+    .manual-result.show {
+      display: block
+    }
+
+    /* RIDE HISTORY */
+    .history-toggle {
+      font-size: .78rem;
+      color: var(--text-muted);
+      background: none;
+      border: none;
+      cursor: pointer;
+      font-family: inherit;
+      text-decoration: underline;
+      text-underline-offset: 2px
+    }
+
+    .history-toggle:hover {
+      color: var(--text)
+    }
+
+    .history-list {
+      display: none;
+      margin-top: 6px
+    }
+
+    .history-list.show {
+      display: block
+    }
+
+    .history-item {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      margin-bottom: 8px;
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      font-size: 0.8rem;
+      text-align: left;
+    }
+
+    .history-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 8px;
+    }
+
+    .history-date {
+      font-weight: 700;
+      color: var(--text);
+      font-size: 0.85rem;
+    }
+
+    .history-status {
+      background: rgba(0, 212, 170, 0.15);
+      color: var(--primary);
+      padding: 2px 8px;
+      border-radius: 12px;
+      font-size: 0.65rem;
+      font-weight: 700;
+      text-transform: uppercase;
+    }
+
+    .history-route {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      margin-top: 2px;
+    }
+
+    .history-point {
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+    }
+
+    .history-point-icon {
+      font-size: 0.85rem;
+      line-height: 1.2;
+    }
+
+    .history-point-details {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .history-point-name {
+      color: var(--text);
+      font-weight: 600;
+    }
+
+    .history-point-time {
+      color: var(--text-dim);
+      font-size: 0.7rem;
+    }
+
+    .history-connector {
+      width: 2px;
+      height: 10px;
+      background: var(--border);
+      margin-left: 6px;
+      border-radius: 2px;
+    }
+
+    .history-stats {
+      display: flex;
+      justify-content: space-between;
+      background: rgba(0, 0, 0, 0.2);
+      padding: 10px;
+      border-radius: 8px;
+      margin-top: 4px;
+    }
+
+    .h-stat {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .h-stat-label {
+      font-size: 0.65rem;
+      color: var(--text-muted);
+      text-transform: uppercase;
+    }
+
+    .h-stat-val {
+      font-weight: 700;
+      color: var(--text);
+      font-size: 0.95rem;
+      margin-top: 2px;
+    }
+
+    .h-stat-val.fare {
+      color: var(--primary);
+    }
+
+    .history-payment {
+      font-size: 0.7rem;
+      color: var(--text-dim);
+      text-align: right;
+      margin-top: 2px;
+    }
+
+    @keyframes slideUp {
+      from {
+        opacity: 0;
+        transform: translateY(20px)
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0)
+      }
+    }
+
+    /* CUSTOM MARKER */
+    .user-marker {
+      width: 20px;
+      height: 20px;
+      background: var(--primary);
+      border: 3px solid #fff;
+      border-radius: 50%;
+      box-shadow: 0 0 12px var(--primary-glow), 0 2px 8px rgba(0, 0, 0, .3);
+    }
+
+    .user-marker.tracking {
+      animation: markerPulse 2s infinite
+    }
+
+    @keyframes markerPulse {
+
+      0%,
+      100% {
+        box-shadow: 0 0 12px var(--primary-glow), 0 2px 8px rgba(0, 0, 0, .3)
+      }
+
+      50% {
+        box-shadow: 0 0 24px var(--primary), 0 2px 8px rgba(0, 0, 0, .3)
+      }
+    }
+
+    /* GPS DENIED BANNER */
+    .gps-banner {
+      background: linear-gradient(135deg, #2a1a35, #1a1535);
+      border: 1px solid var(--accent);
+      border-radius: var(--radius-sm);
+      padding: 12px;
+      font-size: .78rem;
+      color: var(--text-dim);
+      display: none;
+      line-height: 1.5;
+    }
+
+    .gps-banner.show {
+      display: block
+    }
+
+    .gps-banner strong {
+      color: var(--accent)
+    }
+
+    /* WEAK GPS WARNING */
+    .weak-gps-warning {
+      background: linear-gradient(135deg, #2a2010, #1a1810);
+      border: 1px solid var(--warning);
+      border-radius: var(--radius-sm);
+      padding: 10px 12px;
+      font-size: .75rem;
+      color: var(--warning);
+      display: none;
+      line-height: 1.4;
+      animation: slideUp .3s ease;
+    }
+
+    .weak-gps-warning.show {
+      display: flex;
+      align-items: center;
+      gap: 8px
+    }
+
+    /* FARE BREAKDOWN */
+    .fare-breakdown {
+      display: flex;
+      justify-content: center;
+      gap: 6px;
+      font-size: .75rem;
+      color: var(--text-dim);
+      margin-bottom: 10px;
+      flex-wrap: wrap;
+    }
+
+    .fare-breakdown span {
+      background: rgba(0, 0, 0, .2);
+      padding: 3px 8px;
+      border-radius: 6px;
+    }
+
+    .fare-breakdown .fare-op {
+      background: none;
+      padding: 3px 2px;
+      color: var(--text-muted);
+    }
+
+    /* LIVE STATS — 4-column for timer */
+    .live-stats-row2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-top: -4px;
+    }
+
+    .stat-card .stat-value.timer {
+      color: var(--accent);
+      font-size: 1.4rem;
+      letter-spacing: 1px;
+    }
+
+    /* NIGHT FARE OPTIONS ROW */
+    .options-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 10px 14px;
+      margin-bottom: 6px;
+    }
+
+    .option-toggle {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--text-dim);
+    }
+
+    .toggle-switch {
+      position: relative;
+      display: inline-block;
+      width: 40px;
+      height: 22px;
+    }
+
+    .toggle-switch input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+
+    .slider {
+      position: absolute;
+      cursor: pointer;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background-color: var(--border);
+      transition: .3s;
+      border-radius: 22px;
+    }
+
+    .slider:before {
+      position: absolute;
+      content: "";
+      height: 16px;
+      width: 16px;
+      left: 3px;
+      bottom: 3px;
+      background-color: var(--text);
+      transition: .3s;
+      border-radius: 50%;
+    }
+
+    input:checked+.slider {
+      background-color: var(--primary);
+    }
+
+    input:checked+.slider:before {
+      transform: translateX(18px);
+      background-color: var(--bg);
+    }
+
+    input:disabled+.slider {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .surcharge-input {
+      width: 50px;
+      background: rgba(0, 0, 0, 0.2);
+      border: 1px solid var(--border);
+      color: var(--primary);
+      font-size: 1rem;
+      font-weight: 700;
+      text-align: center;
+      border-radius: 8px;
+      padding: 4px;
+      outline: none;
+      font-family: inherit;
+    }
+
+    .surcharge-input:disabled {
+      opacity: 0.5;
+      color: var(--text-muted);
+      border-color: transparent;
+    }
+
+    .surcharge-input:focus {
+      border-color: var(--primary);
+    }
+
+    /* PASSENGER SELECTOR */
+    .passenger-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: .8rem;
+    }
+
+    .passenger-row label {
+      color: var(--text-dim);
+      font-weight: 600;
+      white-space: nowrap;
+    }
+
+    .passenger-controls {
+      display: flex;
+      align-items: center;
+      gap: 0;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      overflow: hidden;
+    }
+
+    .passenger-controls button {
+      width: 36px;
+      height: 32px;
+      background: transparent;
+      border: none;
+      color: var(--primary);
+      font-size: 1.1rem;
+      font-weight: 700;
+      cursor: pointer;
+      font-family: inherit;
+      transition: background .15s;
+    }
+
+    .passenger-controls button:hover {
+      background: var(--primary-glow);
+    }
+
+    .passenger-controls button:disabled {
+      color: var(--text-muted);
+      cursor: not-allowed;
+    }
+
+    .passenger-controls .p-count {
+      width: 32px;
+      text-align: center;
+      font-weight: 800;
+      font-size: .9rem;
+      border-left: 1px solid var(--border);
+      border-right: 1px solid var(--border);
+      padding: 4px 0;
+    }
+
+    .split-fare-text {
+      flex: 1;
+      text-align: right;
+      color: var(--primary);
+      font-weight: 700;
+      font-size: .85rem;
+    }
+
+    /* SHARE BUTTON */
+    .btn-share {
+      background: linear-gradient(135deg, var(--accent), #5a4bd1);
+      color: #fff;
+      box-shadow: 0 4px 16px rgba(108, 92, 231, .25);
+    }
+
+    .btn-share:hover {
+      transform: translateY(-1px);
+    }
+
+    /* STATS DASHBOARD */
+    .stats-dashboard {
+      display: none;
+      animation: slideUp .3s ease;
+    }
+
+    .stats-dashboard.show {
+      display: block;
+    }
+
+    .stats-title {
+      font-size: .85rem;
+      font-weight: 700;
+      color: var(--accent);
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+    }
+
+    .stats-grid .mini-stat {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 10px 8px;
+      text-align: center;
+    }
+
+    .mini-stat .ms-value {
+      font-size: 1.1rem;
+      font-weight: 800;
+      color: var(--text);
+    }
+
+    .mini-stat .ms-label {
+      font-size: .6rem;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: .3px;
+      margin-top: 2px;
+    }
+
+    /* RESULTS CARD — extra rows */
+    .results-grid-3 {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+      margin-bottom: 8px;
+    }
+
+    .result-item-sm {
+      background: rgba(0, 0, 0, .2);
+      border-radius: 8px;
+      padding: 8px 6px;
+      text-align: center;
+    }
+
+    .result-item-sm .result-label {
+      font-size: .58rem;
+    }
+
+    .result-item-sm .result-value {
+      font-size: .95rem;
+    }
+
+    /* ACCURACY CIRCLE OVERRIDE */
+    .accuracy-circle {
+      fill: rgba(0, 212, 170, .08);
+      stroke: rgba(0, 212, 170, .3);
+      stroke-width: 1;
+    }
+
+    /* CLEAR HISTORY */
+    .clear-history-btn {
+      font-size: .7rem;
+      color: var(--danger);
+      background: none;
+      border: none;
+      cursor: pointer;
+      font-family: inherit;
+      margin-left: 8px;
+      opacity: .7;
+    }
+
+    .clear-history-btn:hover {
+      opacity: 1;
+      text-decoration: underline;
+    }
+
+    /* FARE GUIDE MODAL */
+    .modal-overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.6);
+      backdrop-filter: blur(4px);
+      z-index: 1000;
+      display: none;
+      opacity: 0;
+      transition: opacity 0.3s ease;
+      pointer-events: none;
+    }
+
+    .modal-overlay.show {
+      display: block;
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .fare-modal {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      width: 100%;
+      max-height: 85vh;
+      background: var(--bg);
+      border-top: 1px solid var(--border);
+      border-radius: 24px 24px 0 0;
+      padding: 24px 20px;
+      display: flex;
+      flex-direction: column;
+      transform: translateY(100%);
+      transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+      z-index: 1001;
+      box-shadow: 0 -10px 40px rgba(0, 0, 0, 0.5);
+    }
+
+    .modal-overlay.show .fare-modal {
+      transform: translateY(0);
+    }
+
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 20px;
+    }
+
+    .modal-title {
+      font-size: 1.4rem;
+      font-weight: 800;
+      color: var(--primary);
+    }
+
+    .modal-subtext {
+      font-size: 0.75rem;
+      color: var(--text-dim);
+      margin-top: 4px;
+    }
+
+    .btn-close {
+      background: rgba(255, 255, 255, 0.1);
+      border: none;
+      color: var(--text);
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      font-size: 1.2rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .modal-content {
+      overflow-y: auto;
+      padding-right: 4px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .modal-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 16px;
+    }
+
+    .modal-card.highlight {
+      border-color: var(--primary-glow);
+      box-shadow: 0 4px 20px var(--primary-glow);
+    }
+
+    .modal-card-title {
+      font-size: 0.85rem;
+      font-weight: 700;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 8px;
+    }
+
+    .fare-big-text {
+      font-size: 2rem;
+      font-weight: 800;
+      color: var(--text);
+      display: flex;
+      align-items: baseline;
+      gap: 8px;
+    }
+
+    .fare-big-text span {
+      font-size: 0.85rem;
+      color: var(--primary);
+      font-weight: 600;
+    }
+
+    .fare-visual-bar {
+      display: flex;
+      height: 8px;
+      border-radius: 4px;
+      overflow: hidden;
+      margin-top: 12px;
+    }
+
+    .fare-visual-bar .base {
+      background: var(--primary);
+      flex: 4;
+    }
+
+    .fare-visual-bar .extra {
+      background: var(--accent);
+      flex: 6;
+      opacity: 0.7;
+    }
+
+    .fare-visual-labels {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.65rem;
+      color: var(--text-muted);
+      margin-top: 4px;
+    }
+
+    .route-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 8px 0;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .route-item:last-child {
+      border-bottom: none;
+    }
+
+    .route-item .r-name {
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--text);
+    }
+
+    .route-item .r-dist {
+      font-size: 0.7rem;
+      color: var(--text-dim);
+    }
+
+    .route-item .r-fare {
+      font-size: 1rem;
+      font-weight: 700;
+      color: var(--primary);
+    }
+
+    .info-notes {
+      font-size: 0.75rem;
+      color: var(--text-dim);
+      line-height: 1.5;
+    }
+
+    .info-notes li {
+      margin-left: 16px;
+      margin-bottom: 4px;
+    }
+
+    .tip-card {
+      background: rgba(108, 92, 231, 0.1);
+      border-left: 3px solid var(--accent);
+      padding: 12px;
+      border-radius: 8px;
+      font-size: 0.8rem;
+      color: var(--text);
+    }
+
+    .btn-info {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 4px 10px;
+      border-radius: 20px;
+      font-size: 0.75rem;
+      cursor: pointer;
+      font-family: inherit;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    /* MAP SEARCH BAR */
+    .map-search-container {
+      position: absolute;
+      top: 16px;
+      left: 16px;
+      right: 16px;
+      z-index: 1000;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+
+    }
+
+    .map-search-box {
+      display: flex;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 8px 12px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+      align-items: center;
+      gap: 10px;
+
+    }
+
+    .map-search-input {
+      flex: 1;
+      background: transparent;
+      border: none;
+      color: var(--text);
+      font-family: inherit;
+      font-size: 0.9rem;
+      outline: none;
+    }
+
+    .map-search-input::placeholder {
+      color: var(--text-dim);
+    }
+
+    .btn-search-clear {
+      background: none;
+      border: none;
+      color: var(--text-muted);
+      font-size: 1.1rem;
+      cursor: pointer;
+      padding: 2px 6px;
+      line-height: 1;
+      display: none;
+    }
+
+    .btn-search-clear.show {
+      display: block;
+    }
+
+    .search-spinner {
+      width: 18px;
+      height: 18px;
+      border: 2px solid var(--border);
+      border-top-color: var(--primary);
+      border-radius: 50%;
+      animation: spin 0.6s linear infinite;
+      display: none;
+      flex-shrink: 0;
+    }
+
+    .search-spinner.show {
+      display: block;
+    }
+
+    @keyframes spin {
+      to {
+        transform: rotate(360deg);
+      }
+    }
+
+    .map-search-results {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      max-height: 200px;
+      overflow-y: auto;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+      display: none;
+      flex-direction: column;
+    }
+
+    .map-search-results.show {
+      display: flex;
+    }
+
+    .search-result-item {
+      padding: 10px 12px;
+      border-bottom: 1px solid var(--border);
+      font-size: 0.8rem;
+      cursor: pointer;
+      color: var(--text);
+    }
+
+    .search-result-item:last-child {
+      border-bottom: none;
+    }
+
+    .search-result-item:hover {
+      background: rgba(255, 255, 255, 0.05);
+    }
+
+    .search-result-name {
+      font-weight: 600;
+      color: var(--primary);
+      margin-bottom: 2px;
+    }
+
+    .search-result-address {
+      font-size: 0.7rem;
+      color: var(--text-dim);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    /* LONG PRESS PROGRESS */
+    .longpress-ring {
+      position: absolute;
+      pointer-events: none;
+      z-index: 999;
+      width: 56px;
+      height: 56px;
+      margin-left: -28px;
+      margin-top: -28px;
+      display: none;
+    }
+
+    .longpress-ring.active {
+      display: block;
+    }
+
+    .longpress-ring svg {
+      width: 100%;
+      height: 100%;
+      transform: rotate(-90deg);
+    }
+
+    .longpress-ring circle {
+      fill: none;
+      stroke-width: 3;
+    }
+
+    .longpress-ring .ring-bg {
+      stroke: rgba(255, 255, 255, 0.15);
+    }
+
+    .longpress-ring .ring-fg {
+      stroke: var(--primary);
+      stroke-dasharray: 150.8;
+      stroke-dashoffset: 150.8;
+      stroke-linecap: round;
+      transition: stroke-dashoffset 3s linear;
+    }
+
+    .longpress-ring.filling .ring-fg {
+      stroke-dashoffset: 0;
+    }
+
+    /* LOCATE ME BUTTON */
+    .locate-btn {
+      position: absolute;
+      bottom: 24px;
+      right: 16px;
+      z-index: 1000;
+      width: 44px;
+      height: 44px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+      color: var(--primary);
+      font-size: 1.2rem;
+      transition: all 0.2s;
+    }
+
+    .locate-btn:hover {
+      background: var(--card);
+      transform: scale(1.05);
+    }
+
+    .locate-btn.active-mode {
+      background: var(--primary);
+      color: #1a1a2e;
+      border-color: var(--primary);
+    }
+
+    .mark-mode-hint {
+      position: absolute;
+      top: 70px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(0, 212, 170, 0.9);
+      color: #1a1a2e;
+      padding: 8px 16px;
+      border-radius: 20px;
+      font-size: 0.85rem;
+      font-weight: 700;
+      z-index: 1000;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+      display: none;
+      pointer-events: none;
+    }
+
+    .mark-mode-hint.show {
+      display: block;
+      animation: pulse 1.5s infinite;
+    }
+
+    @keyframes pulse {
+      0% {
+        transform: translateX(-50%) scale(1);
+      }
+
+      50% {
+        transform: translateX(-50%) scale(1.05);
+      }
+
+      100% {
+        transform: translateX(-50%) scale(1);
+      }
+    }
+
+    /* DESTINATION FARE CARD ON PANEL */
+    .dest-fare-card {
+      background: linear-gradient(135deg, #1a2535, #1e2845);
+      border: 1px solid var(--primary-dark);
+      border-radius: var(--radius-sm);
+      padding: 12px 14px;
+      display: none;
+      animation: slideUp .3s ease;
+    }
+
+    .dest-fare-card.show {
+      display: block;
+    }
+
+    .dest-fare-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 8px;
+    }
+
+    .dest-fare-name {
+      font-size: 0.9rem;
+      font-weight: 700;
+      color: var(--primary);
+      max-width: 75%;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .dest-fare-dismiss {
+      background: none;
+      border: none;
+      color: var(--text-muted);
+      font-size: 0.9rem;
+      cursor: pointer;
+      padding: 0 4px;
+    }
+
+    .dest-fare-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 8px;
+    }
+
+    .dest-fare-item {
+      background: rgba(0, 0, 0, 0.25);
+      border-radius: 8px;
+      padding: 8px 6px;
+      text-align: center;
+    }
+
+    .dest-fare-item .dfl {
+      font-size: 0.6rem;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+    }
+
+    .dest-fare-item .dfv {
+      font-size: 1.1rem;
+      font-weight: 800;
+      margin-top: 2px;
+      color: var(--text);
+    }
+
+    .dest-fare-item .dfv.fare-color {
+      color: var(--primary);
+    }
+
+    .dest-fare-breakdown {
+      font-size: 0.68rem;
+      color: var(--text-dim);
+      text-align: center;
+      margin-top: 8px;
+    }
+  </style>
+</head>
+
+<body>
+  <div id="app">
+    <div class="map-wrapper">
+      <div id="map"></div>
+      <div id="markModeHint" class="mark-mode-hint">Tap anywhere on map to drop pin</div>
+      <button class="locate-btn" id="btnMarkMode" onclick="toggleMarkMode()" title="Toggle Mark Mode"
+        style="bottom: 130px; border-radius: 8px; width: auto; padding: 0 12px; font-weight: bold; font-size: 0.8rem; display: flex; align-items: center; justify-content: center; gap: 6px; box-shadow: 0 4px 15px rgba(0,212,170,0.4);">
+        <span style="font-size: 1rem">📌</span>
+      </button>
+      <button class="locate-btn" id="btnLocateDest" onclick="locateDest()" title="Locate Destination"
+        style="bottom: 76px; display: none;">📍</button>
+      <button class="locate-btn" id="btnLocate" onclick="locateMe()" title="Locate Me">🎯</button>
+    </div>
+    <div class="map-search-container">
+      <div class="map-search-box">
+        <span style="color:var(--text-dim)">🔍</span>
+        <input type="text" id="mapSearchInput" class="map-search-input" placeholder="Search destination in GenSan..."
+          autocomplete="off">
+        <div class="search-spinner" id="searchSpinner"></div>
+        <button class="btn-search-clear" id="btnSearchClear" onclick="clearSearch()">✕</button>
+      </div>
+      <div class="map-search-results" id="mapSearchResults"></div>
+    </div>
+    <div class="longpress-ring" id="longpressRing">
+      <svg viewBox="0 0 56 56">
+        <circle class="ring-bg" cx="28" cy="28" r="24" />
+        <circle class="ring-fg" cx="28" cy="28" r="24" />
+      </svg>
+    </div>
+    <div id="panel">
+      <div class="drag-handle" onclick="togglePanel()"></div>
+      <div class="app-header" onclick="togglePanel()">
+        <div>
+          <span class="app-title">TrikeFare Gensan</span>
+          <span class="app-badge">GPS</span>
+        </div>
+        <button class="btn-info" onclick="event.stopPropagation(); openFareGuide()">ℹ️ Guide</button>
+      </div>
+
+      <div class="status-bar">
+        <span class="status-dot" id="statusDot"></span>
+        <span id="statusText">Ready — tap Start Ride to begin</span>
+      </div>
+
+      <div class="dest-fare-card" id="destFareCard">
+        <div class="dest-fare-header">
+          <div class="dest-fare-name" id="destFareName">—</div>
+          <button class="dest-fare-dismiss" onclick="dismissDestFare()" title="Dismiss">✕</button>
+        </div>
+        <div class="dest-fare-grid">
+          <div class="dest-fare-item">
+            <div class="dfl">Distance</div>
+            <div class="dfv" id="destFareDist">—</div>
+          </div>
+          <div class="dest-fare-item">
+            <div class="dfl">ETA</div>
+            <div class="dfv" id="destFareETA">—</div>
+          </div>
+          <div class="dest-fare-item">
+            <div class="dfl">Est. Fare</div>
+            <div class="dfv fare-color" id="destFareCost">—</div>
+          </div>
+        </div>
+        <div class="dest-fare-breakdown" id="destFareBreakdown"></div>
+      </div>
+
+      <div class="live-stats">
+        <div class="stat-card" id="distCard">
+          <div class="stat-label">Distance</div>
+          <div class="stat-value" id="liveDistance">0.00</div>
+          <div class="stat-unit">km</div>
+        </div>
+        <div class="stat-card" id="speedCard">
+          <div class="stat-label">Speed</div>
+          <div class="stat-value" id="liveSpeed">0</div>
+          <div class="stat-unit">km/h</div>
+        </div>
+        <div class="stat-card" id="fareCard">
+          <div class="stat-label">Est. Fare</div>
+          <div class="stat-value fare" id="liveFare">₱15</div>
+          <div class="stat-unit">pesos</div>
+        </div>
+      </div>
+
+      <div class="live-stats-row2">
+        <div class="stat-card" id="timerCard">
+          <div class="stat-label">Duration</div>
+          <div class="stat-value timer" id="liveTimer">00:00</div>
+          <div class="stat-unit">min:sec</div>
+        </div>
+        <div class="stat-card" id="avgSpeedCard">
+          <div class="stat-label">Avg Speed</div>
+          <div class="stat-value" id="liveAvgSpeed">0</div>
+          <div class="stat-unit">km/h</div>
+        </div>
+      </div>
+
+      <div class="options-row">
+        <div class="option-toggle">
+          <span>⚙️ Base Fare (₱)</span>
+        </div>
+        <input type="number" id="baseFareAmount" value="20" min="15" max="100" step="1" class="surcharge-input"
+          oninput="updateBaseFare()">
+      </div>
+
+      <div class="options-row">
+        <div class="option-toggle">
+          <label class="toggle-switch">
+            <input type="checkbox" id="nightToggle" onchange="toggleNightFareInput()">
+            <span class="slider"></span>
+          </label>
+          <span>Night Surcharge (₱)</span>
+        </div>
+        <input type="number" id="nightAmount" value="5" min="0" max="50" step="1" class="surcharge-input"
+          oninput="updateAllFares()">
+      </div>
+
+      <div class="options-row">
+        <div class="option-toggle">
+          <span>🔒 Fixed Fare (₱)</span>
+        </div>
+        <input type="number" id="fixedFareAmount" placeholder="Opt" min="0" step="1" class="surcharge-input"
+          style="width: 60px;" oninput="updateAllFares()">
+      </div>
+
+      <div class="btn-row">
+        <button class="btn btn-start" id="btnStart" onclick="startRide()">
+          <span class="icon">▶</span> Start Ride
+        </button>
+        <button class="btn btn-stop" id="btnStop" onclick="stopRide()" disabled>
+          <span class="icon">■</span> Stop
+        </button>
+        <button class="btn btn-reset" id="btnReset" onclick="resetRide()" disabled>↺</button>
+      </div>
+
+      <div class="weak-gps-warning" id="weakGpsWarning">
+        ⚠️ Weak GPS signal — results may be inaccurate
+      </div>
+
+      <div class="gps-banner" id="gpsBanner">
+        <strong>📍 GPS Unavailable</strong><br>
+        Location access was denied or is not supported. Use manual route selection below.
+      </div>
+
+      <div class="results-card" id="resultsCard">
+        <div class="results-title">🏁 Ride Summary</div>
+        <div class="results-grid">
+          <div class="result-item">
+            <div class="result-label">Total Distance</div>
+            <div class="result-value" id="resultDist">0.00 km</div>
+          </div>
+          <div class="result-item">
+            <div class="result-label">Suggested Fare</div>
+            <div class="result-value fare" id="resultFare">₱15</div>
+          </div>
+        </div>
+        <div class="results-grid-3">
+          <div class="result-item-sm">
+            <div class="result-label">Duration</div>
+            <div class="result-value" id="resultDuration">00:00</div>
+          </div>
+          <div class="result-item-sm">
+            <div class="result-label">Avg Speed</div>
+            <div class="result-value" id="resultAvgSpeed">0 km/h</div>
+          </div>
+          <div class="result-item-sm">
+            <div class="result-label">Max Speed</div>
+            <div class="result-value" id="resultMaxSpeed">0 km/h</div>
+          </div>
+        </div>
+        <div class="fare-breakdown" id="fareBreakdown"></div>
+        <div class="passenger-row">
+          <label>👥 Passengers:</label>
+          <div class="passenger-controls">
+            <button onclick="changePassengers(-1)" id="pMinus">−</button>
+            <span class="p-count" id="passengerCount">1</span>
+            <button onclick="changePassengers(1)" id="pPlus">+</button>
+          </div>
+          <span class="split-fare-text" id="splitFareText"></span>
+        </div>
+        <div class="btn-row" style="margin-top:8px">
+          <button class="btn btn-share" onclick="shareRide()">
+            📤 Share Ride
+          </button>
+        </div>
+        <div class="disclaimer">⚠️ This is an estimate based on standard tricycle rates in General Santos City.
+          Actual
+          fares may vary.</div>
+      </div>
+
+      <div class="manual-section" id="manualSection">
+        <div class="manual-title">📋 Manual Route Selector</div>
+        <div class="select-wrap">
+          <select id="routeSelect" onchange="calcManualFare()">
+            <option value="">— Select a route —</option>
+          </select>
+        </div>
+        <div class="manual-result" id="manualResult">
+          <div class="stat-label">Distance</div>
+          <div class="stat-value" id="manualDist" style="font-size:1.1rem">—</div>
+          <div class="stat-label" style="margin-top:6px">Suggested Fare</div>
+          <div class="stat-value fare" id="manualFare" style="font-size:1.3rem">—</div>
+          <div class="disclaimer" style="margin-top:10px;text-align:left">⚠️ Estimate based on standard
+            tricycle rates
+            in General Santos City.</div>
+        </div>
+      </div>
+
+      <div style="text-align:center">
+        <button class="history-toggle" onclick="toggleHistory()">📜 Ride History</button>
+        <button class="clear-history-btn" id="clearHistBtn" onclick="clearHistory()">🗑 Clear</button>
+        <div class="history-list" id="historyList"></div>
+      </div>
+
+      <div class="stats-dashboard" id="statsDashboard">
+        <div class="stats-title">📊 Lifetime Stats</div>
+        <div class="stats-grid">
+          <div class="mini-stat">
+            <div class="ms-value" id="statTotalRides">0</div>
+            <div class="ms-label">Total Rides</div>
+          </div>
+          <div class="mini-stat">
+            <div class="ms-value" id="statTotalKm">0</div>
+            <div class="ms-label">Total km</div>
+          </div>
+          <div class="mini-stat">
+            <div class="ms-value" id="statTotalSpent">₱0</div>
+            <div class="ms-label">Total Spent</div>
+          </div>
+          <div class="mini-stat">
+            <div class="ms-value" id="statAvgDist">0</div>
+            <div class="ms-label">Avg Distance</div>
+          </div>
+          <div class="mini-stat">
+            <div class="ms-value" id="statAvgFare">₱0</div>
+            <div class="ms-label">Avg Fare</div>
+          </div>
+          <div class="mini-stat">
+            <div class="ms-value" id="statLongest">0</div>
+            <div class="ms-label">Longest Ride</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- FARE GUIDE MODAL -->
+  <div class="modal-overlay" id="modalOverlay" onclick="if(event.target===this) closeFareGuide()">
+    <div class="fare-modal" id="fareModal">
+      <div class="modal-header">
+        <div>
+          <div class="modal-title">Fare Guide</div>
+          <div class="modal-subtext">General Santos City Tricycle Rates (Reference Only)</div>
+        </div>
+        <button class="btn-close" onclick="closeFareGuide()">×</button>
+      </div>
+      <div class="modal-content">
+        <div class="modal-card highlight">
+          <div class="modal-card-title">Base Fare</div>
+          <div class="fare-big-text" id="guideBaseFare">₱15 <span>first 4 km</span></div>
+          <div class="fare-visual-bar">
+            <div class="base"></div>
+            <div class="extra"></div>
+          </div>
+          <div class="fare-visual-labels">
+            <span>0 - 4 km (Base)</span>
+            <span>+₱1/km after</span>
+          </div>
+        </div>
+
+        <div class="modal-card">
+          <div class="modal-card-title">Distance Pricing</div>
+          <div style="font-size: 0.9rem;"><strong>₱1.00</strong> per kilometer beyond the first 4 km.</div>
+          <div style="font-size: 0.8rem; color: var(--text-dim); margin-top: 4px;">Night Surcharge (6PM-6AM):
+            <strong>+₱5.00</strong>
+          </div>
+        </div>
+
+        <div class="tip-card">
+          💡 <strong>Tip:</strong> Short trips within the city center usually stay within the base fare range.
+        </div>
+
+        <div class="modal-card">
+          <div class="modal-card-title">Sample Estimates</div>
+          <div id="sampleRoutesList"></div>
+        </div>
+
+        <div class="modal-card">
+          <div class="modal-card-title">Important Notes</div>
+          <ul class="info-notes">
+            <li>Traffic, time of day, and driver discretion may affect actual fare.</li>
+            <li>This tool is for estimation only based on general consensus.</li>
+            <li><strong style="color:var(--primary)">Note:</strong> Current fare is 15% higher than the base
+              fare
+              because of
+              fuel price hikes.</li>
+            <li>Not an official government fare system.</li>
+            <li><strong style="color:var(--primary)">Rules based on Ordinance No. 8, Series of 2023 (General
+                Santos
+                City)</strong></li>
+          </ul>
+          <div
+            style="font-size: 0.65rem; color: var(--text-dim); margin-top: 12px; line-height: 1.5; border-left: 2px solid var(--primary-dark); padding-left: 10px; background: rgba(0,0,0,0.15); padding: 10px; border-radius: 0 8px 8px 0;">
+            <em>"Legal Basis: Ordinance No. 8, Series of 2023 Section 120. FARES AND FARE MATRIX- The
+              minimum fare of
+              MTH
+              in the city is at fifteen pesos (P15.00) per passenger for the first four (4) kilometers and
+              an additional
+              fare of 1.00 per kilometer, if the distance traverse exceeds 4 kilometers. Provided, that
+              the prevailing
+              transportation fare privileges granted by law to students, senior citizens, and persons with
+              disability
+              (PWD) shall continue to apply. Shortchanging the passenger, as defined under 'No Short
+              Changing Act of
+              2016' (Republic Act No. 10909) shall constitute a violation of this section."</em>
+            <br><br>
+            <em>"When the origin-destination is only CBD-CBD, minimum fare is still fifteen pesos (P15.00),
+              as the
+              shortest distance from any point never exceeds four (4) kilometers."</em>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  </div>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script>
+    // ============================================================
+    // CONFIG — All tunable constants in one place
+    // ============================================================
+    const CONFIG = {
+      THROTTLE_MS: 2500, MIN_ACCURACY_M: 50, WEAK_SIGNAL_M: 30,
+      MIN_MOVEMENT_KM: 0.01, MAX_JUMP_KM: 0.3, MAX_SPEED_KMH: 60,
+      BASE_FARE: 15, BASE_KM: 4, PER_KM_RATE: 1,
+      NIGHT_SURCHARGE: 3, NIGHT_START: 18, NIGHT_END: 6,
+      CENTER: [6.1164, 125.1716], MAX_HISTORY: 20
+    };
+
+    const ROUTES = [
+      // ₱15 (0–4 km range)
+      { from: "SM Gensan", to: "Bulaong Terminal", distance: 2.5, group: "₱15 Base Fare (0–4 km)" },
+      { from: "KCC/Gaisano/SM", to: "Bulaong Terminal", distance: 3.14, group: "₱15 Base Fare (0–4 km)" },
+      { from: "CBD/Market/SM", to: "NLSA Junction (Lagao)", distance: 3.42, group: "₱15 Base Fare (0–4 km)" },
+      { from: "Plaza Heneral Santos", to: "Lagao Gym", distance: 3.55, group: "₱15 Base Fare (0–4 km)" },
+      { from: "SM", to: "Mindanao Medical Center", distance: 3.68, group: "₱15 Base Fare (0–4 km)" },
+      { from: "SM", to: "SM Save More San Isidro", distance: 3.7, group: "₱15 Base Fare (0–4 km)" },
+      { from: "KCC/Robinson", to: "Greenfield Residence Lagao", distance: 3.83, group: "₱15 Base Fare (0–4 km)" },
+      { from: "KCC/SM", to: "Lagao National High School", distance: 3.91, group: "₱15 Base Fare (0–4 km)" },
+      { from: "Plaza Heneral Santos", to: "Dacera Ave / Yumang Junction", distance: 3.93, group: "₱15 Base Fare (0–4 km)" },
+      { from: "CBD/Public Market", to: "Salvani St", distance: 3.97, group: "₱15 Base Fare (0–4 km)" },
+      { from: "Multiple CBD short routes", to: "Any point ≤ 4 km", distance: 4.0, group: "₱15 Base Fare (0–4 km)" },
+      // ₱19–₱20 RANGE
+      { from: "CBD", to: "Habitat Phase B", distance: 8.0, group: "₱19–₱20 Range" },
+      { from: "CBD", to: "VSM Heights", distance: 8.0, group: "₱19–₱20 Range" },
+      { from: "CBD", to: "Habitat Phase A", distance: 9.0, group: "₱19–₱20 Range" },
+      { from: "CBD", to: "Brgy Hall Katangawan", distance: 9.0, group: "₱19–₱20 Range" },
+      // ₱24–₱27 RANGE
+      { from: "CBD", to: "Brgy Hall Mabuhay", distance: 13.0, group: "₱24–₱27 Range" },
+      { from: "CBD", to: "Brgy Hall Conel", distance: 15.0, group: "₱24–₱27 Range" },
+      { from: "CBD", to: "Brgy Hall Olympog", distance: 16.0, group: "₱24–₱27 Range" },
+      // ₱36 RANGE
+      { from: "CBD", to: "Upper Labay", distance: 25.0, group: "₱36 Range" }
+    ];
+
+    // ============================================================
+    // DOM CACHE — Avoid repeated lookups
+    // ============================================================
+    const DOM = {};
+    function cacheDom() {
+      [
+        'statusDot', 'statusText', 'liveDistance', 'liveSpeed', 'liveFare', 'liveTimer', 'liveAvgSpeed',
+        'distCard', 'speedCard', 'fareCard', 'timerCard', 'avgSpeedCard',
+        'btnStart', 'btnStop', 'btnReset',
+        'resultsCard', 'resultDist', 'resultFare', 'resultDuration', 'resultAvgSpeed', 'resultMaxSpeed',
+        'fareBreakdown', 'gpsBanner', 'weakGpsWarning', 'nightToggle', 'nightAmount',
+        'manualSection', 'manualResult', 'manualDist', 'manualFare', 'routeSelect',
+        'historyList', 'clearHistBtn', 'passengerCount', 'splitFareText', 'pMinus', 'pPlus',
+        'statsDashboard', 'statTotalRides', 'statTotalKm', 'statTotalSpent',
+        'statAvgDist', 'statAvgFare', 'statLongest',
+        'modalOverlay', 'sampleRoutesList', 'baseFareAmount', 'guideBaseFare',
+        'mapSearchInput', 'mapSearchResults', 'searchSpinner', 'btnSearchClear',
+        'longpressRing',
+        'destFareCard', 'destFareName', 'destFareDist', 'destFareETA', 'destFareCost', 'destFareBreakdown',
+        'fixedFareAmount', 'btnLocateDest', 'btnMarkMode', 'markModeHint'
+      ].forEach(id => { DOM[id] = document.getElementById(id); });
+    }
+
+    // ============================================================
+    // STATE
+    // ============================================================
+    let map, userMarker, routeLine, accuracyCircle;
+    let watchId = null;
+    let isTracking = false;
+    let destinationMarker = null;
+    let destinationRouteLine = null; // Road-route line to destination
+    let positions = [];
+    let totalDistance = 0;
+    let lastPos = null;
+    let currentGPSPos = null; // Always holds the latest known GPS fix
+    let lastTimestamp = 0;
+    let currentSpeed = 0;
+    let maxSpeed = 0;
+    let weakSignalCount = 0;
+    let rideStartTime = 0;
+    let timerInterval = null;
+    let passengerCount = 1;
+    let isNightFare = false;
+    let isMarkModeActive = false; // Flag for tap-to-mark mode
+    // Stores the last destination selected via search so the popup can be refreshed on fare changes
+    let lastDestination = null; // { distKm, name, originLabel, routeLabel }
+
+    // ============================================================
+    // MATH UTILITIES
+    // ============================================================
+    function togglePanel() {
+      const panel = document.getElementById('panel');
+      panel.classList.toggle('collapsed');
+      if (!panel.classList.contains('collapsed')) {
+        panel.scrollTop = 0;
+      }
+    }
+
+    // ============================================================
+    // MAP SEARCH — Real-time as-you-type with debounce
+    // ============================================================
+    let searchDebounceTimer = null;
+    let searchAbortController = null;
+
+    function setupRealtimeSearch() {
+      DOM.mapSearchInput.addEventListener('input', function () {
+        const q = this.value.trim();
+        DOM.btnSearchClear.classList.toggle('show', q.length > 0);
+        if (searchDebounceTimer) clearTimeout(searchDebounceTimer);
+        if (q.length < 2) {
+          DOM.mapSearchResults.classList.remove('show');
+          DOM.searchSpinner.classList.remove('show');
+          return;
+        }
+        DOM.searchSpinner.classList.add('show');
+        searchDebounceTimer = setTimeout(() => performSearch(q), 400);
+      });
+      // Also handle Enter key
+      DOM.mapSearchInput.addEventListener('keydown', function (e) {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          if (searchDebounceTimer) clearTimeout(searchDebounceTimer);
+          const q = this.value.trim();
+          if (q.length >= 2) performSearch(q);
+        }
+      });
+    }
+
+    function clearSearch() {
+      DOM.mapSearchInput.value = '';
+      DOM.btnSearchClear.classList.remove('show');
+      DOM.mapSearchResults.classList.remove('show');
+      DOM.searchSpinner.classList.remove('show');
+      if (searchDebounceTimer) clearTimeout(searchDebounceTimer);
+      DOM.mapSearchInput.focus();
+    }
+
+    async function performSearch(query) {
+      if (!query) return;
+      if (searchAbortController) searchAbortController.abort();
+      searchAbortController = new AbortController();
+
+      try {
+        // Broaden search to cover entire General Santos City reliably
+        const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=15&viewbox=125.0,6.3,125.4,5.9&bounded=1`;
+        const res = await fetch(url, { signal: searchAbortController.signal });
+        const data = await res.json();
+
+        if (data.length === 0) {
+          DOM.mapSearchResults.innerHTML = `<div class="search-result-item" style="text-align:center; color:var(--danger)">No results found</div>`;
+        } else {
+          DOM.mapSearchResults.innerHTML = data.map((item) => {
+            const name = item.name || item.display_name.split(',')[0];
+            const address = item.display_name;
+            return `<div class="search-result-item" onclick="selectDestination(${item.lat}, ${item.lon}, '${name.replace(/'/g, "\\\'")}')">
+                      <div class="search-result-name">${name}</div>
+                      <div class="search-result-address">${address}</div>
+                    </div>`;
+          }).join('');
+        }
+        DOM.mapSearchResults.classList.add('show');
+      } catch (err) {
+        if (err.name === 'AbortError') return;
+        DOM.mapSearchResults.innerHTML = `<div class="search-result-item" style="text-align:center; color:var(--danger)">Search error</div>`;
+        DOM.mapSearchResults.classList.add('show');
+      } finally {
+        DOM.searchSpinner.classList.remove('show');
+      }
+    }
+
+    async function selectDestination(lat, lon, name) {
+      DOM.mapSearchResults.classList.remove('show');
+      const destLatLng = [lat, lon];
+
+      // Remove previous destination marker and route line
+      if (destinationMarker) map.removeLayer(destinationMarker);
+      if (destinationRouteLine) { map.removeLayer(destinationRouteLine); destinationRouteLine = null; }
+
+      const destIcon = L.divIcon({
+        className: 'user-marker',
+        html: '<div style="background:var(--danger);width:100%;height:100%;border-radius:50%;border:2px solid #fff;box-shadow:0 0 10px rgba(255,107,107,0.5);"></div>',
+        iconSize: [20, 20], iconAnchor: [10, 10]
+      });
+
+      destinationMarker = L.marker(destLatLng, { icon: destIcon }).addTo(map);
+      DOM.btnLocateDest.style.display = 'flex';
+
+      // Determine the best available origin — prefer live GPS fix, then last ride pos, then city center
+      const originLatLng = currentGPSPos || lastPos || null;
+      const hasRealGPS = !!currentGPSPos;
+
+      // Show a loading popup immediately
+      destinationMarker.bindPopup(
+        `<div style="text-align:center;font-family:'Inter',sans-serif;color:#333;padding:4px 8px;">
+          <div style="font-weight:800;font-size:1rem;color:#e55;">${name}</div>
+          <div style="font-size:0.78rem;color:#888;margin-top:4px;">📡 Calculating route...</div>
+        </div>`,
+        { closeButton: false }
+      ).openPopup();
+
+      // Fit map to show both origin and destination immediately
+      const originForBounds = originLatLng || CONFIG.CENTER;
+      map.fitBounds(L.latLngBounds([originForBounds, destLatLng]), { padding: [60, 60] });
+
+      let durationSec = null;
+      let calculatedRoutes = [];
+
+      // Try OSRM road routing if we have a real origin
+      // Request up to 3 alternatives
+      if (originLatLng) {
+        try {
+          const [oLat, oLon] = originLatLng;
+          const osrmUrl = `https://router.project-osrm.org/route/v1/driving/${oLon},${oLat};${lon},${lat}?overview=full&geometries=geojson&alternatives=3`;
+          const res = await fetch(osrmUrl, { signal: AbortSignal.timeout(8000) });
+          if (res.ok) {
+            const data = await res.json();
+            if (data.routes && data.routes.length > 0) {
+              data.routes.forEach((rt) => {
+                 calculatedRoutes.push({
+                    distKm: rt.distance / 1000,
+                    durationSec: rt.duration,
+                    routeCoords: rt.geometry.coordinates.map(([lng, lat]) => [lat, lng])
+                 });
+              });
+              
+              // Classify routes
+              let fastest = [...calculatedRoutes].sort((a, b) => a.durationSec - b.durationSec)[0];
+              fastest.label = 'Fastest';
+              
+              let shortest = [...calculatedRoutes].sort((a, b) => a.distKm - b.distKm)[0];
+              if (shortest === fastest && calculatedRoutes.length > 1) {
+                 shortest = [...calculatedRoutes].sort((a, b) => a.distKm - b.distKm)[1];
+              }
+              if (!shortest.label) shortest.label = 'Shortest';
+              
+              calculatedRoutes.forEach((rt, idx) => {
+                 if (!rt.label) rt.label = 'Alternate';
+              });
+              
+              calculatedRoutes.sort((a, b) => a.durationSec - b.durationSec);
+            }
+          }
+        } catch (e) {
+          console.warn('OSRM routing failed:', e);
+        }
+      }
+
+      // Fall back to haversine if OSRM failed
+      const origin = originLatLng || CONFIG.CENTER;
+      const fallbackDist = haversine(origin[0], origin[1], lat, lon);
+      
+      let distKm, usedRoad = false;
+      if (calculatedRoutes.length > 0) {
+        distKm = calculatedRoutes[0].distKm;
+        durationSec = calculatedRoutes[0].durationSec;
+        usedRoad = true;
+      } else {
+        distKm = fallbackDist;
+      }
+
+      // Persist context so fare changes can re-render the popup without re-routing
+      const originLabel = hasRealGPS
+        ? '📍 From your location'
+        : (lastPos ? '📍 From last known position' : '⚠️ GPS unavailable — city center used');
+      const routeLabel = usedRoad ? '🛣️ ' + calculatedRoutes[0].label : '📐 Straight-line (est.)';
+      
+      lastDestination = { distKm, name, originLabel, routeLabel, durationSec, calculatedRoutes, selectedRouteIndex: 0 };
+      
+      renderDestinationRoute();
+      updateDestinationPopup();
+      updatePanelDestFare();
+    }
+
+    function renderDestinationRoute() {
+      if (!lastDestination) return;
+      if (destinationRouteLine) { map.removeLayer(destinationRouteLine); destinationRouteLine = null; }
+      
+      const { calculatedRoutes, selectedRouteIndex } = lastDestination;
+      if (calculatedRoutes && calculatedRoutes.length > 0) {
+        const route = calculatedRoutes[selectedRouteIndex];
+        if (route && route.routeCoords && route.routeCoords.length > 1) {
+          destinationRouteLine = L.polyline(route.routeCoords, {
+            color: '#ff6b6b', weight: 4, opacity: 0.75, dashArray: '8 6'
+          }).addTo(map);
+          map.fitBounds(destinationRouteLine.getBounds(), { padding: [60, 60] });
+        }
+      }
+    }
+
+    window.switchRoute = function(index) {
+      if (!lastDestination || !lastDestination.calculatedRoutes) return;
+      const route = lastDestination.calculatedRoutes[index];
+      if (!route) return;
+      
+      lastDestination.selectedRouteIndex = index;
+      lastDestination.distKm = route.distKm;
+      lastDestination.durationSec = route.durationSec;
+      lastDestination.routeLabel = '🛣️ ' + route.label;
+      
+      renderDestinationRoute();
+      updateDestinationPopup();
+      updatePanelDestFare();
+    };
+
+    function haversine(lat1, lon1, lat2, lon2) {
+      const R = 6371;
+      const toRad = v => v * Math.PI / 180;
+      const dLat = toRad(lat2 - lat1);
+      const dLon = toRad(lon2 - lon1);
+      const a = Math.sin(dLat / 2) ** 2 +
+        Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon / 2) ** 2;
+      return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    }
+
+    function getFixedFare() {
+      const val = parseInt(DOM.fixedFareAmount.value);
+      return isNaN(val) ? null : val;
+    }
+
+    function calculateFare(distanceKm, includeNight) {
+      const fixed = getFixedFare();
+      if (fixed !== null) return fixed;
+
+      let fare = CONFIG.BASE_FARE;
+      if (distanceKm > CONFIG.BASE_KM) fare += Math.ceil((distanceKm - CONFIG.BASE_KM) * CONFIG.PER_KM_RATE);
+      if (includeNight && DOM.nightToggle.checked) {
+        fare += parseInt(DOM.nightAmount.value) || 0;
+      }
+      return fare;
+    }
+
+    function getFareBreakdown(distanceKm) {
+      const fixed = getFixedFare();
+      if (fixed !== null) {
+        return { base: fixed, extra: 0, night: 0, total: fixed, isFixed: true };
+      }
+      const base = CONFIG.BASE_FARE;
+      const extra = distanceKm > CONFIG.BASE_KM ? Math.ceil((distanceKm - CONFIG.BASE_KM) * CONFIG.PER_KM_RATE) : 0;
+      const night = DOM.nightToggle.checked ? (parseInt(DOM.nightAmount.value) || 0) : 0;
+      return { base, extra, night, total: base + extra + night, isFixed: false };
+    }
+
+    function toggleNightFareInput() {
+      DOM.nightAmount.disabled = !DOM.nightToggle.checked;
+      updateAllFares();
+    }
+
+    function updateBaseFare() {
+      let parsedVal = parseInt(DOM.baseFareAmount.value);
+      CONFIG.BASE_FARE = !isNaN(parsedVal) && parsedVal >= 15 ? parsedVal : 15;
+      DOM.guideBaseFare.innerHTML = `₱${CONFIG.BASE_FARE} <span>first ${CONFIG.BASE_KM} km</span>`;
+      DOM.sampleRoutesList.innerHTML = ''; // Force re-render of groups on next open
+      if (DOM.modalOverlay.classList.contains('show')) {
+        openFareGuide(); // refresh immediately if it's open
+      }
+      updateAllFares();
+    }
+
+    function formatETA(seconds) {
+      if (seconds === null || seconds === undefined) return null;
+      const totalMin = Math.round(seconds / 60);
+      if (totalMin < 60) return `~${totalMin} min`;
+      const h = Math.floor(totalMin / 60);
+      const m = totalMin % 60;
+      return m > 0 ? `~${h}h ${m}min` : `~${h}h`;
+    }
+
+    function updateDestinationPopup() {
+      if (!lastDestination || !destinationMarker) return;
+
+      const { distKm, name, originLabel, routeLabel, durationSec } = lastDestination;
+      const estFare = calculateFare(distKm, true);
+      const fixed = getFixedFare();
+      const etaLabel = formatETA(durationSec);
+      const etaRow = etaLabel
+        ? `<div style="display:flex;justify-content:space-between;align-items:center;background:#f0f4ff;border-radius:6px;padding:6px 10px;margin-bottom:4px;">
+            <span style="font-size:0.72rem;color:#555;">⏱️ Est. travel time</span>
+            <strong style="font-size:0.92rem;color:#3a3abd;">${etaLabel}</strong>
+           </div>`
+        : '';
+
+      const fareLabel = fixed !== null ? 'Fixed Fare' : 'Est. Fare';
+      
+      let routeButtonsHtml = '';
+      if (lastDestination.calculatedRoutes && lastDestination.calculatedRoutes.length > 1) {
+         routeButtonsHtml = `<div style="display:flex;gap:4px;margin-bottom:8px;flex-wrap:wrap;">`;
+         lastDestination.calculatedRoutes.forEach((rt, idx) => {
+            const isSelected = idx === lastDestination.selectedRouteIndex;
+            const bg = isSelected ? 'var(--primary)' : '#e0e0e0';
+            const color = isSelected ? '#fff' : '#333';
+            routeButtonsHtml += `<button onclick="switchRoute(${idx})" style="flex:1;font-size:0.65rem;padding:6px 2px;border:none;border-radius:4px;background:${bg};color:${color};font-weight:700;cursor:pointer;">${rt.label}</button>`;
+         });
+         routeButtonsHtml += `</div>`;
+      }
+
+      const popupContent = `
+        <div style="font-family:'Inter',sans-serif;color:#1a1a2e;min-width:170px;">
+          <div style="font-weight:800;font-size:1rem;color:#c0392b;margin-bottom:6px;">${name}</div>
+          <div style="font-size:0.7rem;color:#666;margin-bottom:8px;">${originLabel}</div>
+          ${routeButtonsHtml}
+          <div style="display:flex;justify-content:space-between;align-items:center;background:#f5f5f5;border-radius:6px;padding:6px 10px;margin-bottom:4px;">
+            <span style="font-size:0.72rem;color:#555;">${routeLabel}</span>
+            <strong style="font-size:1rem;color:#1a1a2e;">${distKm.toFixed(2)} km</strong>
+          </div>
+          ${etaRow}
+          <div style="display:flex;justify-content:space-between;align-items:center;background:#e8faf5;border-radius:6px;padding:8px 10px;">
+            <span style="font-size:0.72rem;color:#555;">${fareLabel}</span>
+            <strong style="font-size:1.3rem;color:#00a885;">₱${estFare}</strong>
+          </div>
+        </div>
+      `;
+      destinationMarker.bindPopup(popupContent, { closeButton: false });
+      if (!destinationMarker.isPopupOpen()) {
+        destinationMarker.openPopup();
+      } else {
+        destinationMarker.getPopup().setContent(popupContent);
+      }
+    }
+
+    // ============================================================
+    // PANEL DESTINATION FARE CARD
+    // ============================================================
+    function updatePanelDestFare() {
+      if (!lastDestination) {
+        DOM.destFareCard.classList.remove('show');
+        return;
+      }
+      const { distKm, name, durationSec } = lastDestination;
+      const estFare = calculateFare(distKm, true);
+      const fareBreak = getFareBreakdown(distKm);
+      const etaLabel = formatETA(durationSec) || '—';
+
+      DOM.destFareName.textContent = '📍 ' + name;
+      DOM.destFareDist.textContent = distKm.toFixed(2) + ' km';
+      DOM.destFareETA.textContent = etaLabel;
+      DOM.destFareCost.textContent = '₱' + estFare;
+
+      if (fareBreak.isFixed) {
+        DOM.destFareBreakdown.textContent = "Manual Fixed Fare";
+      } else {
+        let bd = `₱${fareBreak.base} base`;
+        if (fareBreak.extra > 0) bd += ` + ₱${fareBreak.extra} dist`;
+        if (fareBreak.night > 0) bd += ` + ₱${fareBreak.night} 🌙`;
+        bd += ` = ₱${fareBreak.total}`;
+        DOM.destFareBreakdown.textContent = bd;
+      }
+
+      DOM.destFareCard.classList.add('show');
+
+      // Real-time sync: Update the main fareCard to show destination fare
+      DOM.liveFare.textContent = '₱' + estFare;
+    }
+
+    function dismissDestFare() {
+      lastDestination = null;
+      DOM.destFareCard.classList.remove('show');
+      DOM.btnLocateDest.style.display = 'none';
+      if (destinationMarker) { map.removeLayer(destinationMarker); destinationMarker = null; }
+      if (destinationRouteLine) { map.removeLayer(destinationRouteLine); destinationRouteLine = null; }
+
+      // Revert live fare to actual tracked distance or base
+      if (isTracking) {
+        DOM.liveFare.textContent = '₱' + calculateFare(totalDistance, true);
+      } else {
+        DOM.liveFare.textContent = '₱' + calculateFare(0, true);
+      }
+    }
+
+    async function fetchPlaceName(lat, lon) {
+      let placeName = `${lat.toFixed(5)}, ${lon.toFixed(5)}`;
+      try {
+        const rgUrl = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}&zoom=18&addressdetails=1`;
+        const res = await fetch(rgUrl, { signal: AbortSignal.timeout(5000) });
+        const data = await res.json();
+        if (data && data.display_name) {
+          const addr = data.address || {};
+          
+          const priority = [
+            'amenity', 'shop', 'tourism', 'leisure', 'building', 'historic', 'man_made', 'highway', 'road'
+          ];
+          
+          let foundPoi = null;
+          for (const key of priority) {
+            if (addr[key]) {
+              foundPoi = addr[key];
+              break;
+            }
+          }
+          
+          let area = addr.neighbourhood || addr.suburb || addr.village || addr.city_district || '';
+          
+          if (foundPoi) {
+             placeName = area ? `${foundPoi}, ${area}` : foundPoi;
+          } else if (area) {
+             placeName = area;
+          } else {
+             placeName = data.display_name.split(',').slice(0, 2).join(', ');
+          }
+        }
+      } catch (err) {
+        console.warn('Reverse geocode failed:', err);
+      }
+      return placeName;
+    }
+
+    // ============================================================
+    // LONG-PRESS ON MAP (3 seconds) — drop destination pin
+    // ============================================================
+    function setupLongPress() {
+      let lpTimer = null;
+      let lpLatLng = null;
+      const LONG_PRESS_MS = 3000;
+      const ring = DOM.longpressRing;
+      const mapContainer = map.getContainer();
+
+      function startLP(e) {
+        lpLatLng = e.latlng;
+        const pt = map.latLngToContainerPosition ? map.latLngToContainerPosition(lpLatLng) : map.latLngToLayerPoint(lpLatLng);
+        // Position the ring at the point on the map
+        const rect = mapContainer.getBoundingClientRect();
+        const containerPt = map.latLngToContainerPoint(lpLatLng);
+        ring.style.left = containerPt.x + 'px';
+        ring.style.top = containerPt.y + 'px';
+        ring.classList.add('active');
+        // Force reflow before adding filling class for CSS transition
+        void ring.offsetWidth;
+        ring.classList.add('filling');
+
+        lpTimer = setTimeout(async () => {
+          ring.classList.remove('active', 'filling');
+          if (navigator.vibrate) navigator.vibrate(80);
+          const placeName = await fetchPlaceName(lpLatLng.lat, lpLatLng.lng);
+          selectDestination(lpLatLng.lat, lpLatLng.lng, placeName);
+        }, LONG_PRESS_MS);
+      }
+
+      function cancelLP() {
+        if (lpTimer) { clearTimeout(lpTimer); lpTimer = null; }
+        ring.classList.remove('active', 'filling');
+      }
+
+      // Mouse events
+      map.on('mousedown', startLP);
+      map.on('mouseup', cancelLP);
+      map.on('mousemove', (e) => {
+        if (lpTimer && lpLatLng) {
+          const d = map.latLngToContainerPoint(e.latlng).distanceTo(map.latLngToContainerPoint(lpLatLng));
+          if (d > 10) cancelLP();
+        }
+      });
+
+      // Touch events
+      map.on('touchstart', (e) => {
+        if (e.originalEvent && e.originalEvent.touches && e.originalEvent.touches.length === 1) {
+          startLP(e);
+        }
+      });
+      map.on('touchend', cancelLP);
+      map.on('touchmove', (e) => {
+        if (lpTimer && lpLatLng) {
+          const d = map.latLngToContainerPoint(e.latlng).distanceTo(map.latLngToContainerPoint(lpLatLng));
+          if (d > 15) cancelLP(); // slightly larger tolerance for touch to avoid accidental cancellation
+        } else if (lpTimer) {
+          cancelLP();
+        }
+      });
+
+      // Cancel on drag/zoom
+      map.on('dragstart', cancelLP);
+      map.on('zoomstart', cancelLP);
+
+      // Tap-to-mark handling (single click)
+      map.on('click', async (e) => {
+        if (!isMarkModeActive) return; // Only process if Mark Mode is enabled
+
+        // Turn off mode after successful tap
+        toggleMarkMode(false);
+
+        if (navigator.vibrate) navigator.vibrate(50);
+
+        const placeName = await fetchPlaceName(e.latlng.lat, e.latlng.lng);
+        selectDestination(e.latlng.lat, e.latlng.lng, placeName);
+      });
+    }
+
+    function toggleMarkMode(forceState) {
+      if (typeof forceState === 'boolean') {
+        isMarkModeActive = forceState;
+      } else {
+        isMarkModeActive = !isMarkModeActive;
+      }
+
+      if (isMarkModeActive) {
+        DOM.btnMarkMode.classList.add('active-mode');
+        DOM.markModeHint.classList.add('show');
+        document.getElementById('map').style.cursor = 'crosshair';
+      } else {
+        DOM.btnMarkMode.classList.remove('active-mode');
+        DOM.markModeHint.classList.remove('show');
+        document.getElementById('map').style.cursor = '';
+      }
+    }
+
+    function locateDest() {
+      if (destinationMarker) {
+        map.flyTo(destinationMarker.getLatLng(), 16, { animate: true, duration: 1.5 });
+      }
+    }
+
+    function locateMe() {
+      if (currentGPSPos) {
+        map.flyTo(currentGPSPos, 16, { animate: true, duration: 1.5 });
+      } else {
+        map.flyTo(CONFIG.CENTER, 14, { animate: true, duration: 1.5 });
+      }
+    }
+
+    function updateAllFares() {
+      updateLiveStats(); // Always update top cards immediately for instant feedback
+
+      // Update Results Card if visible
+      if (DOM.resultsCard.classList.contains('show')) {
+        const fare = calculateFare(totalDistance, true);
+        DOM.resultFare.textContent = '₱' + fare;
+        renderFareBreakdown(totalDistance);
+        if (passengerCount > 1) {
+          const split = Math.ceil(fare / passengerCount);
+          DOM.splitFareText.textContent = `(₱${split} each)`;
+        }
+      }
+
+      // Update Manual Route Result if visible
+      if (DOM.manualResult.classList.contains('show')) {
+        calcManualFare();
+      }
+
+      // Update destination popup fare in real-time
+      updateDestinationPopup();
+      updatePanelDestFare();
+    }
+
+    function formatTime(seconds) {
+      const m = Math.floor(seconds / 60);
+      const s = Math.floor(seconds % 60);
+      return String(m).padStart(2, '0') + ':' + String(s).padStart(2, '0');
+    }
+
+    function getElapsedSeconds() {
+      if (!rideStartTime) return 0;
+      return (Date.now() - rideStartTime) / 1000;
+    }
+
+    // ============================================================
+    // MAP INIT
+    // ============================================================
+    function initMap() {
+      map = L.map('map', {
+        center: CONFIG.CENTER, zoom: 14,
+        zoomControl: true, attributionControl: false
+      });
+      L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+        maxZoom: 19
+      }).addTo(map);
+      L.control.attribution({ prefix: false, position: 'bottomright' })
+        .addAttribution('© OpenStreetMap · CartoDB')
+        .addTo(map);
+
+      const markerIcon = L.divIcon({
+        className: 'user-marker', iconSize: [20, 20], iconAnchor: [10, 10]
+      });
+      userMarker = L.marker(CONFIG.CENTER, { icon: markerIcon }).addTo(map);
+      routeLine = L.polyline([], {
+        color: '#00d4aa', weight: 4, opacity: 0.8, smoothFactor: 1
+      }).addTo(map);
+      accuracyCircle = L.circle(CONFIG.CENTER, {
+        radius: 0, className: 'accuracy-circle', interactive: false
+      }).addTo(map);
+
+    }
+
+    // ============================================================
+    // UI UPDATERS
+    // ============================================================
+    let lastRenderedDist = -1;
+    let lastRenderedSpeed = -1;
+
+    function updateLiveStats() {
+      const distStr = totalDistance.toFixed(2);
+      const speedInt = Math.round(currentSpeed);
+      if (distStr !== lastRenderedDist) {
+        DOM.liveDistance.textContent = distStr;
+        lastRenderedDist = distStr;
+      }
+      // Always update fare because base rates or toggles may have changed
+      DOM.liveFare.textContent = '₱' + calculateFare(totalDistance, true);
+      if (speedInt !== lastRenderedSpeed) {
+        DOM.liveSpeed.textContent = speedInt;
+        lastRenderedSpeed = speedInt;
+      }
+      // Avg speed
+      const elapsed = getElapsedSeconds();
+      if (elapsed > 0) {
+        DOM.liveAvgSpeed.textContent = Math.round((totalDistance / (elapsed / 3600)) || 0);
+      }
+    }
+
+    function tickTimer() {
+      const s = getElapsedSeconds();
+      DOM.liveTimer.textContent = formatTime(s);
+    }
+
+    function setStatus(text, type) {
+      DOM.statusText.textContent = text;
+      DOM.statusDot.className = 'status-dot' +
+        (type === 'tracking' ? ' tracking' : type === 'error' ? ' error' : '');
+    }
+
+    function setButtonStates(start, stop, reset) {
+      DOM.btnStart.disabled = !start;
+      DOM.btnStop.disabled = !stop;
+      DOM.btnReset.disabled = !reset;
+    }
+
+    function setOptionsState(disabled) {
+      DOM.baseFareAmount.disabled = disabled;
+      DOM.nightToggle.disabled = disabled;
+      DOM.fixedFareAmount.disabled = disabled;
+      if (disabled) {
+        DOM.nightAmount.disabled = true;
+      } else {
+        DOM.nightAmount.disabled = !DOM.nightToggle.checked;
+      }
+    }
+
+    function setCardActive(active) {
+      const m = active ? 'add' : 'remove';
+      DOM.distCard.classList[m]('active');
+      DOM.speedCard.classList[m]('active');
+      DOM.fareCard.classList[m]('active');
+      DOM.timerCard.classList[m]('active');
+      DOM.avgSpeedCard.classList[m]('active');
+    }
+
+    function showWeakSignal(show) {
+      DOM.weakGpsWarning.classList.toggle('show', show);
+    }
+
+    function renderFareBreakdown(distanceKm) {
+      const { base, extra, night, total, isFixed } = getFareBreakdown(distanceKm);
+      let html = '';
+      if (isFixed) {
+        html = `<span>Fixed Fare: <strong>₱${total}</strong></span>`;
+      } else {
+        html = `<span>₱${base} base</span>`;
+        if (extra > 0) html += `<span class="fare-op">+</span><span>₱${extra} distance</span>`;
+        if (night > 0) html += `<span class="fare-op">+</span><span>₱${night} night</span>`;
+        html += `<span class="fare-op">=</span><span><strong>₱${total}</strong></span>`;
+      }
+      DOM.fareBreakdown.innerHTML = html;
+    }
+
+    // ============================================================
+    // GPS POSITION HANDLER — With throttling + filtering
+    // ============================================================
+    function onPosition(pos) {
+      if (!isTracking) return;
+
+      const now = pos.timestamp || Date.now();
+      const { latitude: lat, longitude: lng, accuracy } = pos.coords;
+
+      // 1) THROTTLE — Skip if too soon since last processed update
+      if (now - lastTimestamp < CONFIG.THROTTLE_MS) return;
+
+      // 2) ACCURACY GATE — Reject poor readings entirely
+      if (accuracy > CONFIG.MIN_ACCURACY_M) return;
+
+      // 3) WEAK SIGNAL DETECTION — Warn but still process
+      if (accuracy > CONFIG.WEAK_SIGNAL_M) {
+        weakSignalCount++;
+        if (weakSignalCount >= 3) showWeakSignal(true);
+      } else {
+        weakSignalCount = Math.max(0, weakSignalCount - 1);
+        if (weakSignalCount === 0) showWeakSignal(false);
+      }
+
+      const latlng = [lat, lng];
+
+      if (lastPos) {
+        const distKm = haversine(lastPos[0], lastPos[1], lat, lng);
+        const timeDeltaH = (now - lastTimestamp) / 3600000; // ms -> hours
+
+        // 4) NOISE FILTER — Ignore tiny movements (GPS jitter)
+        if (distKm < CONFIG.MIN_MOVEMENT_KM) {
+          // Still update marker position for visual smoothness
+          userMarker.setLatLng(latlng);
+          return;
+        }
+
+        // 5) SPIKE PROTECTION — Check both distance AND speed
+        if (distKm > CONFIG.MAX_JUMP_KM) return;
+
+        const speedKmh = timeDeltaH > 0 ? distKm / timeDeltaH : 0;
+        if (speedKmh > CONFIG.MAX_SPEED_KMH) return;
+
+        totalDistance += distKm;
+        currentSpeed = speedKmh;
+        if (speedKmh > maxSpeed) maxSpeed = speedKmh;
+      }
+
+      // Update state
+      lastPos = latlng;
+      currentGPSPos = latlng; // Always keep a fresh GPS fix available
+      lastTimestamp = now;
+      positions.push(latlng);
+
+      // Update map
+      userMarker.setLatLng(latlng);
+      accuracyCircle.setLatLng(latlng);
+      accuracyCircle.setRadius(accuracy);
+      const markerEl = userMarker.getElement();
+      if (markerEl) markerEl.classList.add('tracking');
+      routeLine.setLatLngs(positions);
+      map.panTo(latlng, { animate: true, duration: 0.5 });
+
+      // Update UI
+      updateLiveStats();
+      setCardActive(true);
+      setStatus(`Tracking · ${positions.length} pts · ${totalDistance.toFixed(2)} km`, 'tracking');
+    }
+
+    function onGPSError(err) {
+      console.warn('GPS Error:', err.message);
+      setStatus('GPS unavailable — use manual mode', 'error');
+      DOM.gpsBanner.classList.add('show');
+      DOM.manualSection.classList.add('show');
+      if (isTracking) stopRide();
+    }
+
+    // ============================================================
+    // RIDE CONTROLS
+    // ============================================================
+    function startRide() {
+      if (!navigator.geolocation) { onGPSError({ message: 'Not supported' }); return; }
+
+      isTracking = true;
+      totalDistance = 0; positions = []; lastPos = null;
+      lastTimestamp = 0; currentSpeed = 0; maxSpeed = 0;
+      weakSignalCount = 0; lastRenderedDist = -1; lastRenderedSpeed = -1;
+      passengerCount = 1;
+      rideStartTime = Date.now();
+      routeLine.setLatLngs([]);
+      accuracyCircle.setRadius(0);
+
+      setButtonStates(false, true, false);
+      setOptionsState(true);
+      DOM.resultsCard.classList.remove('show');
+      showWeakSignal(false);
+      DOM.liveSpeed.textContent = '0';
+      DOM.liveTimer.textContent = '00:00';
+      DOM.liveAvgSpeed.textContent = '0';
+      setStatus('Acquiring GPS signal...', 'tracking');
+      updateLiveStats();
+
+      timerInterval = setInterval(tickTimer, 1000);
+
+      watchId = navigator.geolocation.watchPosition(onPosition, onGPSError, {
+        enableHighAccuracy: true, maximumAge: 0, timeout: 15000
+      });
+    }
+
+    function stopRide() {
+      isTracking = false; currentSpeed = 0;
+      if (watchId !== null) { navigator.geolocation.clearWatch(watchId); watchId = null; }
+      if (timerInterval) { clearInterval(timerInterval); timerInterval = null; }
+
+      const markerEl = userMarker.getElement();
+      if (markerEl) markerEl.classList.remove('tracking');
+      accuracyCircle.setRadius(0);
+
+      setButtonStates(false, false, true);
+      setCardActive(false);
+      showWeakSignal(false);
+      DOM.liveSpeed.textContent = '0';
+      setStatus('Ride complete', '');
+
+      const elapsed = getElapsedSeconds();
+      const fare = calculateFare(totalDistance, true);
+      const avgSpd = elapsed > 0 ? Math.round(totalDistance / (elapsed / 3600)) : 0;
+
+      DOM.resultDist.textContent = totalDistance.toFixed(2) + ' km';
+      DOM.resultFare.textContent = '₱' + fare;
+      DOM.resultDuration.textContent = formatTime(elapsed);
+      DOM.resultAvgSpeed.textContent = avgSpd + ' km/h';
+      DOM.resultMaxSpeed.textContent = Math.round(maxSpeed) + ' km/h';
+      renderFareBreakdown(totalDistance);
+      DOM.passengerCount.textContent = '1';
+      DOM.splitFareText.textContent = '';
+      DOM.resultsCard.classList.add('show');
+
+      if (navigator.vibrate) navigator.vibrate([100, 50, 100]);
+      saveRide(totalDistance, fare, elapsed);
+
+      if (positions.length > 1) {
+        map.fitBounds(routeLine.getBounds(), { padding: [40, 40] });
+      }
+    }
+
+    function resetRide() {
+      totalDistance = 0; positions = []; lastPos = null;
+      lastTimestamp = 0; currentSpeed = 0; maxSpeed = 0;
+      lastRenderedDist = -1; lastRenderedSpeed = -1;
+      rideStartTime = 0; passengerCount = 1;
+      routeLine.setLatLngs([]);
+      accuracyCircle.setRadius(0);
+      if (timerInterval) { clearInterval(timerInterval); timerInterval = null; }
+
+      setButtonStates(true, false, false);
+      setOptionsState(false);
+      DOM.resultsCard.classList.remove('show');
+      DOM.liveSpeed.textContent = '0';
+      DOM.liveTimer.textContent = '00:00';
+      DOM.liveAvgSpeed.textContent = '0';
+      updateLiveStats();
+      setStatus('Ready — tap Start Ride to begin', '');
+      map.setView(CONFIG.CENTER, 14, { animate: true });
+    }
+
+    // ============================================================
+    // MANUAL MODE FALLBACK
+    // ============================================================
+    function populateRoutes() {
+      ROUTES.forEach((r, i) => {
+        const opt = document.createElement('option');
+        opt.value = i;
+        opt.textContent = `${r.from} → ${r.to} (${r.distance} km)`;
+        DOM.routeSelect.appendChild(opt);
+      });
+    }
+
+    function calcManualFare() {
+      const idx = DOM.routeSelect.value;
+      if (idx === '') { DOM.manualResult.classList.remove('show'); return; }
+      const route = ROUTES[idx];
+      const fare = calculateFare(route.distance);
+      DOM.manualDist.textContent = route.distance.toFixed(1) + ' km';
+      DOM.manualFare.textContent = '₱' + fare;
+      DOM.manualResult.classList.add('show');
+    }
+
+    // ============================================================
+    // RIDE HISTORY (localStorage)
+    // ============================================================
+    function saveRide(dist, fare, duration) {
+      const history = JSON.parse(localStorage.getItem('trikefareHistory') || '[]');
+
+      const endDate = new Date();
+      // Start time is estimated or tracked
+      const startDate = rideStartTime ? new Date(rideStartTime) : new Date(endDate.getTime() - ((duration || 0) * 1000));
+
+      let origin = "Current Location";
+      let destination = "Custom Drop-off";
+      let routeSummary = "GPS Tracked Route";
+
+      if (lastDestination) {
+        origin = lastDestination.originLabel.replace('📍 From ', '');
+        destination = lastDestination.name;
+        routeSummary = lastDestination.routeLabel;
+      }
+
+      const breakdown = getFareBreakdown(dist);
+
+      history.unshift({
+        distance: dist.toFixed(2),
+        fare,
+        duration: Math.round(duration || 0),
+        date: endDate.toLocaleString('en-PH', { month: 'short', day: 'numeric', year: 'numeric' }),
+        startTime: startDate.toLocaleTimeString('en-PH', { hour: '2-digit', minute: '2-digit' }),
+        endTime: endDate.toLocaleTimeString('en-PH', { hour: '2-digit', minute: '2-digit' }),
+        origin,
+        destination,
+        routeSummary,
+        breakdown: { base: breakdown.base, extra: breakdown.extra, night: breakdown.night, isFixed: breakdown.isFixed },
+        paymentStatus: 'Paid (Cash)'
+      });
+
+      if (history.length > CONFIG.MAX_HISTORY) history.pop();
+      localStorage.setItem('trikefareHistory', JSON.stringify(history));
+      renderHistory();
+      updateStatsDashboard();
+    }
+
+    function renderHistory() {
+      const history = JSON.parse(localStorage.getItem('trikefareHistory') || '[]');
+      if (!history.length) {
+        DOM.historyList.innerHTML =
+          '<div style="font-size:.75rem;color:var(--text-muted);padding:8px">No rides yet</div>';
+        DOM.clearHistBtn.style.display = 'none';
+        return;
+      }
+      DOM.clearHistBtn.style.display = '';
+
+      DOM.historyList.innerHTML = history.map(h => {
+        const durStr = h.duration ? formatTime(h.duration) : '--:--';
+
+        // Backwards compatibility for old history format
+        const orig = h.origin || "Current Location";
+        const dest = h.destination || "Custom Drop-off";
+        const sTime = h.startTime || h.date.split(',')[1] || '--:--';
+        const eTime = h.endTime || '--:--';
+        const rSum = h.routeSummary || "GPS Tracked Route";
+        const dateStr = h.date.split(',')[0] || h.date;
+        const pmt = h.paymentStatus || "Cash";
+
+        let bdStr = '';
+        if (h.breakdown) {
+          if (h.breakdown.isFixed) {
+            bdStr = 'Fixed Fare';
+          } else {
+            bdStr = `Base: ₱${h.breakdown.base} ${h.breakdown.extra ? '+ Dist: ₱' + h.breakdown.extra : ''} ${h.breakdown.night ? '+ Night: ₱' + h.breakdown.night : ''}`;
+          }
+        }
+
+        return `
+                <div class="history-item">
+                    <div class="history-header">
+                        <div class="history-date">${dateStr}</div>
+                        <div class="history-status">Completed</div>
+                    </div>
+                    
+                    <div class="history-route">
+                        <div class="history-point">
+                            <div class="history-point-icon">🟢</div>
+                            <div class="history-point-details">
+                                <div class="history-point-name">${orig}</div>
+                                <div class="history-point-time">${sTime}</div>
+                            </div>
+                        </div>
+                        <div class="history-connector"></div>
+                        <div class="history-point">
+                            <div class="history-point-icon">📍</div>
+                            <div class="history-point-details">
+                                <div class="history-point-name">${dest}</div>
+                                <div class="history-point-time">${eTime}</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div style="font-size: 0.7rem; color: var(--text-dim); margin-top: 4px;">
+                        🛣️ ${rSum}
+                    </div>
+
+                    <div class="history-stats">
+                        <div class="h-stat">
+                            <div class="h-stat-label">Distance</div>
+                            <div class="h-stat-val">${h.distance} km</div>
+                        </div>
+                        <div class="h-stat">
+                            <div class="h-stat-label">Duration</div>
+                            <div class="h-stat-val">${durStr}</div>
+                        </div>
+                        <div class="h-stat">
+                            <div class="h-stat-label">Fare</div>
+                            <div class="h-stat-val fare">₱${h.fare}</div>
+                        </div>
+                    </div>
+                    
+                    <div class="history-payment">
+                        ${bdStr ? `<span>${bdStr}</span> &bull; ` : ''}💳 ${pmt}
+                    </div>
+                </div>`;
+      }).join('');
+    }
+
+    function toggleHistory() {
+      DOM.historyList.classList.toggle('show');
+      DOM.statsDashboard.classList.toggle('show');
+    }
+
+    function clearHistory() {
+      if (!confirm('Clear all ride history?')) return;
+      localStorage.removeItem('trikefareHistory');
+      renderHistory();
+      updateStatsDashboard();
+    }
+
+    // ============================================================
+    // PASSENGER FARE SPLIT
+    // ============================================================
+    function changePassengers(delta) {
+      passengerCount = Math.max(1, Math.min(6, passengerCount + delta));
+      DOM.passengerCount.textContent = passengerCount;
+      DOM.pMinus.disabled = passengerCount <= 1;
+      DOM.pPlus.disabled = passengerCount >= 6;
+      const fare = calculateFare(totalDistance, true);
+      if (passengerCount > 1) {
+        DOM.splitFareText.textContent = '₱' + Math.ceil(fare / passengerCount) + ' each';
+      } else {
+        DOM.splitFareText.textContent = '';
+      }
+    }
+
+    // ============================================================
+    // SHARE RIDE
+    // ============================================================
+    function shareRide() {
+      const elapsed = getElapsedSeconds();
+      const fare = calculateFare(totalDistance, true);
+      const text = `🛺 TrikeFare Gensan\n` +
+        `📏 Distance: ${totalDistance.toFixed(2)} km\n` +
+        `💰 Fare: ₱${fare}\n` +
+        `⏱ Duration: ${formatTime(elapsed)}\n` +
+        `🚀 Max Speed: ${Math.round(maxSpeed)} km/h\n` +
+        (DOM.nightToggle.checked ? `🌙 Night surcharge: +₱${DOM.nightAmount.value}\n` : '') +
+        `\n⚠️ Estimate based on GenSan tricycle rates.`;
+
+      if (navigator.share) {
+        navigator.share({ title: 'TrikeFare Gensan', text }).catch(() => { });
+      } else {
+        navigator.clipboard.writeText(text).then(() => {
+          const btn = document.querySelector('.btn-share');
+          btn.textContent = '✅ Copied!';
+          setTimeout(() => { btn.innerHTML = '📤 Share Ride'; }, 2000);
+        });
+      }
+    }
+
+    // ============================================================
+    // STATS DASHBOARD
+    // ============================================================
+    function updateStatsDashboard() {
+      const history = JSON.parse(localStorage.getItem('trikefareHistory') || '[]');
+      const count = history.length;
+      if (!count) {
+        DOM.statTotalRides.textContent = '0';
+        DOM.statTotalKm.textContent = '0';
+        DOM.statTotalSpent.textContent = '₱0';
+        DOM.statAvgDist.textContent = '0';
+        DOM.statAvgFare.textContent = '₱0';
+        DOM.statLongest.textContent = '0';
+        return;
+      }
+      const totalKm = history.reduce((s, h) => s + parseFloat(h.distance), 0);
+      const totalSpent = history.reduce((s, h) => s + h.fare, 0);
+      const longest = Math.max(...history.map(h => parseFloat(h.distance)));
+
+      DOM.statTotalRides.textContent = count;
+      DOM.statTotalKm.textContent = totalKm.toFixed(1);
+      DOM.statTotalSpent.textContent = '₱' + totalSpent;
+      DOM.statAvgDist.textContent = (totalKm / count).toFixed(1);
+      DOM.statAvgFare.textContent = '₱' + Math.round(totalSpent / count);
+      DOM.statLongest.textContent = longest.toFixed(1);
+    }
+
+    // ============================================================
+    // FARE GUIDE MODAL
+    // ============================================================
+    function openFareGuide() {
+      DOM.modalOverlay.classList.add('show');
+
+      // Populate sample routes if empty
+      if (!DOM.sampleRoutesList.innerHTML) {
+        const groups = {};
+        ROUTES.forEach(r => {
+          const fare = calculateFare(r.distance, false);
+          let g = '';
+          if (r.distance <= CONFIG.BASE_KM) g = `₱${CONFIG.BASE_FARE} Base Fare (0–${CONFIG.BASE_KM} km)`;
+          else g = `₱${fare} Range`;
+
+          if (!groups[g]) groups[g] = [];
+          groups[g].push(r);
+        });
+
+        let html = '';
+        for (const [groupName, routes] of Object.entries(groups)) {
+          html += `<div style="margin-top:16px; margin-bottom:8px; font-size:0.75rem; color:var(--primary); font-weight:800; text-transform:uppercase; letter-spacing:0.5px; border-bottom:1px solid var(--border); padding-bottom:4px;">${groupName}</div>`;
+          html += routes.map(r => {
+            const fare = calculateFare(r.distance, false);
+            return `<div class="route-item">
+              <div>
+                <div class="r-name">${r.from} → ${r.to}</div>
+                <div class="r-dist">${r.distance.toFixed(1)} km</div>
+              </div>
+              <div class="r-fare">₱${fare}</div>
+            </div>`;
+          }).join('');
+        }
+        DOM.sampleRoutesList.innerHTML = html;
+      }
+
+      DOM.guideBaseFare.innerHTML = `₱${CONFIG.BASE_FARE} <span>first ${CONFIG.BASE_KM} km</span>`;
+    }
+
+    function closeFareGuide() {
+      DOM.modalOverlay.classList.remove('show');
+    }
+
+    // ============================================================
+    // INIT
+    // ============================================================
+    initMap();
+    cacheDom();
+    setupLongPress();
+    populateRoutes();
+    renderHistory();
+    updateStatsDashboard();
+    setupRealtimeSearch();
+
+    // Init night fare toggle based on current time
+    const currentHour = new Date().getHours();
+    DOM.nightToggle.checked = (currentHour >= CONFIG.NIGHT_START || currentHour < CONFIG.NIGHT_END);
+
+    // Sync UI with the default input values
+    updateBaseFare();
+    toggleNightFareInput();
+
+    navigator.geolocation?.getCurrentPosition(
+      pos => {
+        const latlng = [pos.coords.latitude, pos.coords.longitude];
+        currentGPSPos = latlng; // Store the initial fix so selectDestination can use it immediately
+        userMarker.setLatLng(latlng);
+        accuracyCircle.setLatLng(latlng);
+        accuracyCircle.setRadius(pos.coords.accuracy || 0);
+        map.setView(latlng, 15, { animate: true });
+        setStatus('GPS ready — tap Start Ride', '');
+      },
+      () => onGPSError({ message: 'denied' }),
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+    );
+  </script>
+</body>
+
+</html>
