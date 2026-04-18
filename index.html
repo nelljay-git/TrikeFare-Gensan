@@ -6,6 +6,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <meta name="description"
         content="TrikeFare Gensan - GPS-based tricycle fare calculator for General Santos City commuters">
+    <meta name="theme-color" content="#0a0e1a">
+    <link rel="manifest" href="/manifest.json">
+    <link rel="apple-touch-icon" href="/icon-192x192.png">
     <title>TrikeFare Gensan</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -1530,6 +1533,7 @@
                     <span class="app-badge">GPS</span>
                 </div>
                 <div style="display:flex; gap:8px;">
+                    <button class="btn-info" id="btnInstallPwa" onclick="event.stopPropagation(); installPwa()" style="display:none; background: linear-gradient(135deg, var(--accent), #5a4bd1); color: #fff; border:none; box-shadow: 0 2px 8px rgba(108, 92, 231, .3);">⬇️ Install</button>
                     <button class="btn-info" onclick="event.stopPropagation(); openHistoryModal()">📜 History</button>
                     <button class="btn-info" onclick="event.stopPropagation(); openFareGuide()">ℹ️ Guide</button>
                 </div>
@@ -1622,9 +1626,7 @@
             <div class="options-row">
                 <div class="option-toggle" style="flex:1;">
                     <span>🔒 Fixed Fare (₱)</span>
-                    <span id="btnClearFixed" onclick="clearFixedFare()"
-                        style="display:none; color:var(--danger, #ff4757); font-size:0.75rem; font-weight:700; cursor:pointer; padding:4px; margin-left:auto;">✕
-                        Clear</span>
+                    <span id="btnClearFixed" onclick="clearFixedFare()" style="display:none; color:var(--danger, #ff4757); font-size:0.75rem; font-weight:700; cursor:pointer; padding:4px; margin-left:auto;">✕ Clear</span>
                 </div>
                 <input type="number" id="fixedFareAmount" placeholder="Opt" min="0" step="1" class="surcharge-input"
                     style="width: 60px; margin-left:10px;" oninput="updateFixedFare()">
@@ -2504,6 +2506,7 @@
         }
 
         function clearFixedFare() {
+            if (typeof isTracking !== 'undefined' && isTracking) return;
             DOM.fixedFareAmount.value = '';
             DOM.btnClearFixed.style.display = 'none';
             updateAllFares();
@@ -2516,22 +2519,22 @@
                 return;
             }
             if (marker._animId) cancelAnimationFrame(marker._animId);
-
+            
             const startTime = performance.now();
             const targetLat = newLatLngArray[0] !== undefined ? newLatLngArray[0] : newLatLngArray.lat;
             const targetLng = newLatLngArray[1] !== undefined ? newLatLngArray[1] : newLatLngArray.lng;
-
+            
             function step(currentTime) {
                 const elapsed = currentTime - startTime;
                 let progress = elapsed / duration;
                 if (progress > 1) progress = 1;
-
+                
                 const ease = 1 - Math.pow(1 - progress, 3);
                 const lat = startLatLng.lat + (targetLat - startLatLng.lat) * ease;
                 const lng = startLatLng.lng + (targetLng - startLatLng.lng) * ease;
-
+                
                 marker.setLatLng([lat, lng]);
-
+                
                 if (progress < 1) {
                     marker._animId = requestAnimationFrame(step);
                 } else {
@@ -2653,8 +2656,12 @@
             DOM.fixedFareAmount.disabled = disabled;
             if (disabled) {
                 DOM.nightAmount.disabled = true;
+                DOM.btnClearFixed.style.display = 'none';
             } else {
                 DOM.nightAmount.disabled = !DOM.nightToggle.checked;
+                if (DOM.fixedFareAmount.value) {
+                    DOM.btnClearFixed.style.display = 'block';
+                }
             }
         }
 
@@ -3176,6 +3183,47 @@
             () => onGPSError({ message: 'denied' }),
             { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
         );
+
+        // ============================================================
+        // PWA & SERVICE WORKER
+        // ============================================================
+        let deferredPrompt;
+        const btnInstallPwa = document.getElementById('btnInstallPwa');
+
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            if (btnInstallPwa) {
+                btnInstallPwa.style.display = 'flex';
+            }
+        });
+
+        async function installPwa() {
+            if (deferredPrompt) {
+                deferredPrompt.prompt();
+                const { outcome } = await deferredPrompt.userChoice;
+                if (outcome === 'accepted') {
+                    console.log('User accepted the install prompt');
+                }
+                deferredPrompt = null;
+                if (btnInstallPwa) {
+                    btnInstallPwa.style.display = 'none';
+                }
+            }
+        }
+
+        window.addEventListener('appinstalled', () => {
+            if (btnInstallPwa) btnInstallPwa.style.display = 'none';
+            deferredPrompt = null;
+        });
+
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/sw.js').catch(err => {
+                    console.warn('SW registration failed:', err);
+                });
+            });
+        }
     </script>
 </body>
 
