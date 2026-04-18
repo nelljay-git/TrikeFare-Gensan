@@ -251,6 +251,17 @@
             font-weight: 500
         }
 
+        .live-clock {
+            grid-column: span 3;
+            text-align: center;
+            font-size: 0.82rem;
+            color: var(--text-muted);
+            font-weight: 700;
+            padding: 4px 0 8px 0;
+            letter-spacing: 0.5px;
+            font-family: 'Inter', sans-serif;
+        }
+
         /* BUTTONS */
         .btn-row {
             display: flex;
@@ -1769,6 +1780,7 @@
             </div>
 
             <div class="live-stats">
+                <div class="live-clock" id="liveClock">—</div>
                 <div class="stat-card" id="distCard">
                     <div class="stat-label"><i class="fa-solid fa-ruler"></i> Distance</div>
                     <div class="stat-value" id="liveDistance">0.00</div>
@@ -1833,7 +1845,7 @@
 
             <div class="btn-row">
                 <button class="btn btn-start" id="btnStart" onclick="startRide()">
-                    <span class="icon"><i class="fa-solid fa-play"></i></span> Start
+                    <span class="icon"><i class="fa-solid fa-play"></i></span> Start Ride
                 </button>
                 <button class="btn btn-stop" id="btnStop" onclick="stopRide()" disabled>
                     <span class="icon"><i class="fa-solid fa-stop"></i></span> Stop
@@ -2125,8 +2137,9 @@
                 'longpressRing',
                 'destFareCard', 'destFareName', 'destFareDist', 'destFareETA', 'destFareCost', 'destFareBreakdown',
                 'fixedFareAmount', 'btnClearFixed', 'btnLocateDest', 'btnMarkMode', 'markModeHint',
-                'historyModalOverlay', 'historyModal', 'btnDismissDest'
+                'historyModalOverlay', 'historyModal', 'btnDismissDest', 'liveClock'
             ].forEach(id => { DOM[id] = document.getElementById(id); });
+            updateClock();
         }
 
         // ============================================================
@@ -2136,6 +2149,29 @@
         if (currentTheme === 'dark') {
             document.documentElement.setAttribute('data-theme', 'dark');
         }
+
+        function updateMapTiles() {
+            if (!map) return;
+            const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+            // Leaflet map tile update logic would go here if needed
+        }
+
+        // ============================================================
+        // REAL-TIME CLOCK
+        // ============================================================
+        function updateClock() {
+            if (!DOM.liveClock) return;
+            const now = new Date();
+            const datePart = now.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+            const timePart = now.toLocaleTimeString('en-US', {
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit',
+                hour12: true
+            });
+            DOM.liveClock.textContent = `${datePart} – ${timePart}`;
+        }
+        setInterval(updateClock, 1000);
 
         function toggleTheme() {
             currentTheme = currentTheme === 'light' ? 'dark' : 'light';
