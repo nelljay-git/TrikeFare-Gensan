@@ -1523,13 +1523,16 @@
       </svg>
     </div>
     <div id="panel">
-      <div class="drag-handle" onclick="togglePanel()"></div>
+      <div class="drag-handle" onclick="togglePanel()"><span style="opacity: 0;">---</span></div>
       <div class="app-header" onclick="togglePanel()">
         <div>
           <span class="app-title">TrikeFare Gensan</span>
           <span class="app-badge">GPS</span>
         </div>
-        <button class="btn-info" onclick="event.stopPropagation(); openFareGuide()">ℹ️ Guide</button>
+        <div style="display:flex; gap:8px;">
+          <button class="btn-info" onclick="event.stopPropagation(); openHistoryModal()">📜 History</button>
+          <button class="btn-info" onclick="event.stopPropagation(); openFareGuide()">ℹ️ Guide</button>
+        </div>
       </div>
 
       <div class="status-bar">
@@ -1540,7 +1543,7 @@
       <div class="dest-fare-card" id="destFareCard">
         <div class="dest-fare-header">
           <div class="dest-fare-name" id="destFareName">—</div>
-          <button class="dest-fare-dismiss" onclick="dismissDestFare()" title="Dismiss">✕</button>
+          <button class="dest-fare-dismiss" id="btnDismissDest" onclick="dismissDestFare()" title="Dismiss">✕</button>
         </div>
         <div class="dest-fare-grid">
           <div class="dest-fare-item">
@@ -1555,6 +1558,11 @@
             <div class="dfl">Est. Fare</div>
             <div class="dfv fare-color" id="destFareCost">—</div>
           </div>
+        </div>
+        <div id="destFareFixedRow"
+          style="display:none; justify-content:space-between; align-items:center; background:rgba(108,92,231,0.1); border-radius:8px; padding:8px 12px; margin-top:8px; border:1px solid rgba(108,92,231,0.2);">
+          <span style="font-size:0.75rem;color:var(--text-dim);font-weight:600;">Est. Fixed Fare</span>
+          <strong style="font-size:1.1rem;color:var(--accent);" id="destFareFixedCost">—</strong>
         </div>
         <div class="dest-fare-breakdown" id="destFareBreakdown"></div>
       </div>
@@ -1701,41 +1709,6 @@
         </div>
       </div>
 
-      <div style="text-align:center">
-        <button class="history-toggle" onclick="toggleHistory()">📜 Ride History</button>
-        <button class="clear-history-btn" id="clearHistBtn" onclick="clearHistory()">🗑 Clear</button>
-        <div class="history-list" id="historyList"></div>
-      </div>
-
-      <div class="stats-dashboard" id="statsDashboard">
-        <div class="stats-title">📊 Lifetime Stats</div>
-        <div class="stats-grid">
-          <div class="mini-stat">
-            <div class="ms-value" id="statTotalRides">0</div>
-            <div class="ms-label">Total Rides</div>
-          </div>
-          <div class="mini-stat">
-            <div class="ms-value" id="statTotalKm">0</div>
-            <div class="ms-label">Total km</div>
-          </div>
-          <div class="mini-stat">
-            <div class="ms-value" id="statTotalSpent">₱0</div>
-            <div class="ms-label">Total Spent</div>
-          </div>
-          <div class="mini-stat">
-            <div class="ms-value" id="statAvgDist">0</div>
-            <div class="ms-label">Avg Distance</div>
-          </div>
-          <div class="mini-stat">
-            <div class="ms-value" id="statAvgFare">₱0</div>
-            <div class="ms-label">Avg Fare</div>
-          </div>
-          <div class="mini-stat">
-            <div class="ms-value" id="statLongest">0</div>
-            <div class="ms-label">Longest Ride</div>
-          </div>
-        </div>
-      </div>
     </div>
   </div>
 
@@ -1819,6 +1792,57 @@
   </div>
   </div>
 
+  <!-- HISTORY MODAL -->
+  <div class="modal-overlay" id="historyModalOverlay" onclick="if(event.target===this) closeHistoryModal()">
+    <div class="fare-modal" id="historyModal">
+      <div class="modal-header">
+        <div>
+          <div class="modal-title">Ride History</div>
+          <div class="modal-subtext">Detailed records of past trips</div>
+        </div>
+        <button class="btn-close" onclick="closeHistoryModal()">×</button>
+      </div>
+      <div class="modal-content">
+        <div class="modal-card">
+          <div class="modal-card-title">Lifetime Stats</div>
+          <div class="stats-grid">
+            <div class="mini-stat">
+              <div class="ms-value" id="statTotalRides">0</div>
+              <div class="ms-label">Total Rides</div>
+            </div>
+            <div class="mini-stat">
+              <div class="ms-value" id="statTotalKm">0</div>
+              <div class="ms-label">Total km</div>
+            </div>
+            <div class="mini-stat">
+              <div class="ms-value" id="statTotalSpent">₱0</div>
+              <div class="ms-label">Total Spent</div>
+            </div>
+            <div class="mini-stat">
+              <div class="ms-value" id="statAvgDist">0</div>
+              <div class="ms-label">Avg Distance</div>
+            </div>
+            <div class="mini-stat">
+              <div class="ms-value" id="statAvgFare">₱0</div>
+              <div class="ms-label">Avg Fare</div>
+            </div>
+            <div class="mini-stat">
+              <div class="ms-value" id="statLongest">0</div>
+              <div class="ms-label">Longest Ride</div>
+            </div>
+          </div>
+        </div>
+        <div class="modal-card">
+          <div style="display:flex; justify-content:space-between; align-items:center;">
+            <div class="modal-card-title" style="margin-bottom:0;">Recent Rides</div>
+            <button class="clear-history-btn" id="clearHistBtn" onclick="clearHistory()">🗑 Clear</button>
+          </div>
+          <div class="history-list show" id="historyList" style="margin-top:12px;"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script>
     // ============================================================
@@ -1877,7 +1901,8 @@
         'mapSearchInput', 'mapSearchResults', 'searchSpinner', 'btnSearchClear',
         'longpressRing',
         'destFareCard', 'destFareName', 'destFareDist', 'destFareETA', 'destFareCost', 'destFareBreakdown',
-        'fixedFareAmount', 'btnLocateDest', 'btnMarkMode', 'markModeHint'
+        'fixedFareAmount', 'btnLocateDest', 'btnMarkMode', 'markModeHint',
+        'historyModalOverlay', 'historyModal', 'btnDismissDest'
       ].forEach(id => { DOM[id] = document.getElementById(id); });
     }
 
@@ -1989,6 +2014,10 @@
     }
 
     async function selectDestination(lat, lon, name) {
+      if (isTracking && lastDestination) {
+        alert("Destination is locked while a ride is active. Please stop the ride to change it.");
+        return;
+      }
       DOM.mapSearchResults.classList.remove('show');
       const destLatLng = [lat, lon];
 
@@ -2036,27 +2065,27 @@
             const data = await res.json();
             if (data.routes && data.routes.length > 0) {
               data.routes.forEach((rt) => {
-                 calculatedRoutes.push({
-                    distKm: rt.distance / 1000,
-                    durationSec: rt.duration,
-                    routeCoords: rt.geometry.coordinates.map(([lng, lat]) => [lat, lng])
-                 });
+                calculatedRoutes.push({
+                  distKm: rt.distance / 1000,
+                  durationSec: rt.duration,
+                  routeCoords: rt.geometry.coordinates.map(([lng, lat]) => [lat, lng])
+                });
               });
-              
+
               // Classify routes
               let fastest = [...calculatedRoutes].sort((a, b) => a.durationSec - b.durationSec)[0];
               fastest.label = 'Fastest';
-              
+
               let shortest = [...calculatedRoutes].sort((a, b) => a.distKm - b.distKm)[0];
               if (shortest === fastest && calculatedRoutes.length > 1) {
-                 shortest = [...calculatedRoutes].sort((a, b) => a.distKm - b.distKm)[1];
+                shortest = [...calculatedRoutes].sort((a, b) => a.distKm - b.distKm)[1];
               }
               if (!shortest.label) shortest.label = 'Shortest';
-              
+
               calculatedRoutes.forEach((rt, idx) => {
-                 if (!rt.label) rt.label = 'Alternate';
+                if (!rt.label) rt.label = 'Alternate';
               });
-              
+
               calculatedRoutes.sort((a, b) => a.durationSec - b.durationSec);
             }
           }
@@ -2068,7 +2097,7 @@
       // Fall back to haversine if OSRM failed
       const origin = originLatLng || CONFIG.CENTER;
       const fallbackDist = haversine(origin[0], origin[1], lat, lon);
-      
+
       let distKm, usedRoad = false;
       if (calculatedRoutes.length > 0) {
         distKm = calculatedRoutes[0].distKm;
@@ -2083,9 +2112,9 @@
         ? '📍 From your location'
         : (lastPos ? '📍 From last known position' : '⚠️ GPS unavailable — city center used');
       const routeLabel = usedRoad ? '🛣️ ' + calculatedRoutes[0].label : '📐 Straight-line (est.)';
-      
+
       lastDestination = { distKm, name, originLabel, routeLabel, durationSec, calculatedRoutes, selectedRouteIndex: 0 };
-      
+
       renderDestinationRoute();
       updateDestinationPopup();
       updatePanelDestFare();
@@ -2094,7 +2123,7 @@
     function renderDestinationRoute() {
       if (!lastDestination) return;
       if (destinationRouteLine) { map.removeLayer(destinationRouteLine); destinationRouteLine = null; }
-      
+
       const { calculatedRoutes, selectedRouteIndex } = lastDestination;
       if (calculatedRoutes && calculatedRoutes.length > 0) {
         const route = calculatedRoutes[selectedRouteIndex];
@@ -2107,16 +2136,16 @@
       }
     }
 
-    window.switchRoute = function(index) {
+    window.switchRoute = function (index) {
       if (!lastDestination || !lastDestination.calculatedRoutes) return;
       const route = lastDestination.calculatedRoutes[index];
       if (!route) return;
-      
+
       lastDestination.selectedRouteIndex = index;
       lastDestination.distKm = route.distKm;
       lastDestination.durationSec = route.durationSec;
       lastDestination.routeLabel = '🛣️ ' + route.label;
-      
+
       renderDestinationRoute();
       updateDestinationPopup();
       updatePanelDestFare();
@@ -2200,17 +2229,25 @@
         : '';
 
       const fareLabel = fixed !== null ? 'Fixed Fare' : 'Est. Fare';
-      
+      const computedFixed = fixed !== null ? fixed : Math.ceil(estFare / 5) * 5;
+      const showFixed = fixed === null && (estFare % 5 !== 0);
+
+      const fixedRow = showFixed ? `
+          <div style="display:flex;justify-content:space-between;align-items:center;background:rgba(108,92,231,0.1);border-radius:6px;padding:6px 10px;margin-top:4px;border:1px solid rgba(108,92,231,0.2);">
+            <span style="font-size:0.72rem;color:#555;font-weight:600;">Est. Fixed Fare</span>
+            <strong style="font-size:1.1rem;color:#6c5ce7;">₱${computedFixed}</strong>
+          </div>` : '';
+
       let routeButtonsHtml = '';
       if (lastDestination.calculatedRoutes && lastDestination.calculatedRoutes.length > 1) {
-         routeButtonsHtml = `<div style="display:flex;gap:4px;margin-bottom:8px;flex-wrap:wrap;">`;
-         lastDestination.calculatedRoutes.forEach((rt, idx) => {
-            const isSelected = idx === lastDestination.selectedRouteIndex;
-            const bg = isSelected ? 'var(--primary)' : '#e0e0e0';
-            const color = isSelected ? '#fff' : '#333';
-            routeButtonsHtml += `<button onclick="switchRoute(${idx})" style="flex:1;font-size:0.65rem;padding:6px 2px;border:none;border-radius:4px;background:${bg};color:${color};font-weight:700;cursor:pointer;">${rt.label}</button>`;
-         });
-         routeButtonsHtml += `</div>`;
+        routeButtonsHtml = `<div style="display:flex;gap:4px;margin-bottom:8px;flex-wrap:wrap;">`;
+        lastDestination.calculatedRoutes.forEach((rt, idx) => {
+          const isSelected = idx === lastDestination.selectedRouteIndex;
+          const bg = isSelected ? 'var(--primary)' : '#e0e0e0';
+          const color = isSelected ? '#fff' : '#333';
+          routeButtonsHtml += `<button onclick="switchRoute(${idx})" style="flex:1;font-size:0.65rem;padding:6px 2px;border:none;border-radius:4px;background:${bg};color:${color};font-weight:700;cursor:pointer;">${rt.label}</button>`;
+        });
+        routeButtonsHtml += `</div>`;
       }
 
       const popupContent = `
@@ -2227,6 +2264,7 @@
             <span style="font-size:0.72rem;color:#555;">${fareLabel}</span>
             <strong style="font-size:1.3rem;color:#00a885;">₱${estFare}</strong>
           </div>
+          ${fixedRow}
         </div>
       `;
       destinationMarker.bindPopup(popupContent, { closeButton: false });
@@ -2255,6 +2293,18 @@
       DOM.destFareETA.textContent = etaLabel;
       DOM.destFareCost.textContent = '₱' + estFare;
 
+      const fixedFare = Math.ceil(estFare / 5) * 5;
+      const showFixed = (estFare % 5 !== 0) && !fareBreak.isFixed;
+      const fixedRowEl = document.getElementById('destFareFixedRow');
+      const fixedCostEl = document.getElementById('destFareFixedCost');
+
+      if (showFixed) {
+        fixedCostEl.textContent = '₱' + fixedFare;
+        fixedRowEl.style.display = 'flex';
+      } else {
+        fixedRowEl.style.display = 'none';
+      }
+
       if (fareBreak.isFixed) {
         DOM.destFareBreakdown.textContent = "Manual Fixed Fare";
       } else {
@@ -2272,6 +2322,10 @@
     }
 
     function dismissDestFare() {
+      if (isTracking && lastDestination) {
+        alert("Destination is locked while a ride is active. Please stop the ride to dismiss it.");
+        return;
+      }
       lastDestination = null;
       DOM.destFareCard.classList.remove('show');
       DOM.btnLocateDest.style.display = 'none';
@@ -2294,11 +2348,11 @@
         const data = await res.json();
         if (data && data.display_name) {
           const addr = data.address || {};
-          
+
           const priority = [
             'amenity', 'shop', 'tourism', 'leisure', 'building', 'historic', 'man_made', 'highway', 'road'
           ];
-          
+
           let foundPoi = null;
           for (const key of priority) {
             if (addr[key]) {
@@ -2306,15 +2360,15 @@
               break;
             }
           }
-          
+
           let area = addr.neighbourhood || addr.suburb || addr.village || addr.city_district || '';
-          
+
           if (foundPoi) {
-             placeName = area ? `${foundPoi}, ${area}` : foundPoi;
+            placeName = area ? `${foundPoi}, ${area}` : foundPoi;
           } else if (area) {
-             placeName = area;
+            placeName = area;
           } else {
-             placeName = data.display_name.split(',').slice(0, 2).join(', ');
+            placeName = data.display_name.split(',').slice(0, 2).join(', ');
           }
         }
       } catch (err) {
@@ -2674,6 +2728,9 @@
       setButtonStates(false, true, false);
       setOptionsState(true);
       DOM.resultsCard.classList.remove('show');
+      if (lastDestination && DOM.btnDismissDest) {
+        DOM.btnDismissDest.style.display = 'none';
+      }
       showWeakSignal(false);
       DOM.liveSpeed.textContent = '0';
       DOM.liveTimer.textContent = '00:00';
@@ -2700,6 +2757,9 @@
       setButtonStates(false, false, true);
       setCardActive(false);
       showWeakSignal(false);
+      if (DOM.btnDismissDest) {
+        DOM.btnDismissDest.style.display = '';
+      }
       DOM.liveSpeed.textContent = '0';
       setStatus('Ride complete', '');
 
@@ -2788,10 +2848,12 @@
       }
 
       const breakdown = getFareBreakdown(dist);
+      const fixedFare = Math.ceil(fare / 5) * 5;
 
       history.unshift({
         distance: dist.toFixed(2),
         fare,
+        fixedFare: (fare % 5 !== 0 && !breakdown.isFixed) ? fixedFare : null,
         duration: Math.round(duration || 0),
         date: endDate.toLocaleString('en-PH', { month: 'short', day: 'numeric', year: 'numeric' }),
         startTime: startDate.toLocaleTimeString('en-PH', { hour: '2-digit', minute: '2-digit' }),
@@ -2837,6 +2899,9 @@
             bdStr = 'Fixed Fare';
           } else {
             bdStr = `Base: ₱${h.breakdown.base} ${h.breakdown.extra ? '+ Dist: ₱' + h.breakdown.extra : ''} ${h.breakdown.night ? '+ Night: ₱' + h.breakdown.night : ''}`;
+            if (h.fixedFare) {
+              bdStr += ` | Est. Fixed: ₱${h.fixedFare}`;
+            }
           }
         }
 
@@ -2880,7 +2945,8 @@
                         </div>
                         <div class="h-stat">
                             <div class="h-stat-label">Fare</div>
-                            <div class="h-stat-val fare">₱${h.fare}</div>
+                            <div class="h-stat-val fare" style="font-size: 1.1rem;">₱${h.fare}</div>
+                            ${h.fixedFare ? `<div style="font-size:0.7rem;color:var(--accent);font-weight:700;margin-top:2px;">Est. Fixed: ₱${h.fixedFare}</div>` : ''}
                         </div>
                     </div>
                     
@@ -2891,9 +2957,14 @@
       }).join('');
     }
 
-    function toggleHistory() {
-      DOM.historyList.classList.toggle('show');
-      DOM.statsDashboard.classList.toggle('show');
+    function openHistoryModal() {
+      DOM.historyModalOverlay.classList.add('show');
+      renderHistory();
+      updateStatsDashboard();
+    }
+
+    function closeHistoryModal() {
+      DOM.historyModalOverlay.classList.remove('show');
     }
 
     function clearHistory() {
@@ -2995,12 +3066,19 @@
           html += `<div style="margin-top:16px; margin-bottom:8px; font-size:0.75rem; color:var(--primary); font-weight:800; text-transform:uppercase; letter-spacing:0.5px; border-bottom:1px solid var(--border); padding-bottom:4px;">${groupName}</div>`;
           html += routes.map(r => {
             const fare = calculateFare(r.distance, false);
-            return `<div class="route-item">
+            const fixedFare = Math.ceil(fare / 5) * 5;
+            const fixedHtml = (fare % 5 !== 0)
+              ? `<div style="font-size:0.75rem;font-weight:700;color:var(--accent);margin-top:2px;background:rgba(108,92,231,0.1);padding:2px 4px;border-radius:4px;display:inline-block;border:1px solid rgba(108,92,231,0.2);">Est. Fixed Fare: ₱${fixedFare}</div>`
+              : '';
+            return `<div class="route-item" style="align-items:center;">
               <div>
                 <div class="r-name">${r.from} → ${r.to}</div>
                 <div class="r-dist">${r.distance.toFixed(1)} km</div>
               </div>
-              <div class="r-fare">₱${fare}</div>
+              <div style="text-align:right;">
+                <div class="r-fare">₱${fare}</div>
+                ${fixedHtml}
+              </div>
             </div>`;
           }).join('');
         }
