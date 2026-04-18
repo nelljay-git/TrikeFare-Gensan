@@ -144,11 +144,19 @@ function selectDestination(lat, lon, name) {
   const distKm = haversine(startLatLgn[0], startLatLgn[1], lat, lon);
   const estFare = calculateFare(distKm, true);
 
+  const fixedFare = Math.ceil(estFare / 5) * 5;
+  const fixedRow = (estFare % 5 !== 0) ? `
+          <div style="display:flex;justify-content:space-between;align-items:center;background:rgba(108,92,231,0.1);border-radius:6px;padding:4px 8px;margin-top:6px;border:1px solid rgba(108,92,231,0.2);">
+            <span style="font-size:0.75rem;color:#555;font-weight:600;">Est. Fixed Fare</span>
+            <strong style="font-size:1rem;color:#6c5ce7;">₱${fixedFare}</strong>
+          </div>` : '';
+
   const popupContent = `
         <div style="text-align:center;font-family:'Inter',sans-serif;color:#333;">
           <div style="font-weight:800;font-size:1.1rem;color:#e55;">${name}</div>
           <div style="font-size:0.8rem;margin-top:4px;">Distance: <strong>${distKm.toFixed(2)} km</strong></div>
           <div style="font-size:1.1rem;font-weight:800;color:#00a885;margin-top:4px;">Est. Fare: ₱${estFare}</div>
+          ${fixedRow}
         </div>
       `;
   destinationMarker.bindPopup(popupContent, { closeButton: false }).openPopup();
@@ -646,12 +654,19 @@ function openFareGuide() {
       html += `<div style="margin-top:16px; margin-bottom:8px; font-size:0.75rem; color:var(--primary); font-weight:800; text-transform:uppercase; letter-spacing:0.5px; border-bottom:1px solid var(--border); padding-bottom:4px;">${groupName}</div>`;
       html += routes.map(r => {
         const fare = calculateFare(r.distance, false);
-        return `<div class="route-item">
+        const fixedFare = Math.ceil(fare / 5) * 5;
+        const fixedHtml = (fare % 5 !== 0) 
+          ? `<div style="font-size:0.75rem;font-weight:700;color:var(--accent);margin-top:2px;background:rgba(108,92,231,0.1);padding:2px 4px;border-radius:4px;display:inline-block;border:1px solid rgba(108,92,231,0.2);">Est. Fixed Fare: ₱${fixedFare}</div>` 
+          : '';
+        return `<div class="route-item" style="align-items:center;">
               <div>
                 <div class="r-name">${r.from} → ${r.to}</div>
                 <div class="r-dist">${r.distance.toFixed(1)} km</div>
               </div>
-              <div class="r-fare">₱${fare}</div>
+              <div style="text-align:right;">
+                <div class="r-fare">₱${fare}</div>
+                ${fixedHtml}
+              </div>
             </div>`;
       }).join('');
     }
