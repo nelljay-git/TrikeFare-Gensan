@@ -150,7 +150,7 @@
         }
 
         #panel.collapsed {
-            max-height: 280px;
+            max-height: 350px;
             overflow: hidden;
         }
 
@@ -254,8 +254,11 @@
         .live-clock {
             grid-column: span 3;
             text-align: center;
-            font-size: 14px;
+            font-size: 0.82rem;
             color: var(--text-muted);
+            font-weight: 700;
+            padding: 4px 0 8px 0;
+            letter-spacing: 0.5px;
             font-family: 'Inter', sans-serif;
         }
 
@@ -1745,7 +1748,6 @@
             <div class="status-bar">
                 <span class="status-dot" id="statusDot"></span>
                 <span id="statusText">Ready — tap Start Ride to begin</span>
-                <div class="live-clock" id="liveClock">—</div>
             </div>
 
             <div class="dest-fare-card" id="destFareCard">
@@ -1778,7 +1780,7 @@
             </div>
 
             <div class="live-stats">
-                
+                <div class="live-clock" id="liveClock">—</div>
                 <div class="stat-card" id="distCard">
                     <div class="stat-label"><i class="fa-solid fa-ruler"></i> Distance</div>
                     <div class="stat-value" id="liveDistance">0.00</div>
@@ -1843,7 +1845,7 @@
 
             <div class="btn-row">
                 <button class="btn btn-start" id="btnStart" onclick="startRide()">
-                    <span class="icon"><i class="fa-solid fa-play"></i></span> Start
+                    <span class="icon"><i class="fa-solid fa-play"></i></span> Start Ride
                 </button>
                 <button class="btn btn-stop" id="btnStop" onclick="stopRide()" disabled>
                     <span class="icon"><i class="fa-solid fa-stop"></i></span> Stop
