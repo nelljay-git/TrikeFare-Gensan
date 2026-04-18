@@ -11,6 +11,7 @@
     <link rel="apple-touch-icon" href="/icon-192x192.png">
     <title>TrikeFare Gensan</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css" />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
         *,
@@ -22,6 +23,31 @@
         }
 
         :root {
+            /* Light Mode Defaults */
+            --bg: #f8fafc;
+            --surface: #ffffff;
+            --card: #f1f5f9;
+            --border: #e2e8f0;
+            --primary: #00b894;
+            --primary-glow: #00b89433;
+            --primary-dark: #008f73;
+            --accent: #6c5ce7;
+            --danger: #ff6b6b;
+            --danger-glow: #ff6b6b33;
+            --warning: #f0a500;
+            --warning-glow: #f0a50033;
+            --text: #1e293b;
+            --text-dim: #64748b;
+            --text-muted: #94a3b8;
+            --radius: 16px;
+            --radius-sm: 10px;
+            --map-bg: #e2e8f0;
+            --gradient-results: linear-gradient(135deg, #ffffff, #f8fafc);
+            --gradient-dest: linear-gradient(135deg, #ffffff, #f1f5f9);
+            --item-bg: rgba(128, 128, 128, 0.1);
+        }
+
+        [data-theme="dark"] {
             --bg: #0a0e1a;
             --surface: #131829;
             --card: #1a2035;
@@ -37,8 +63,10 @@
             --text: #e8ecf4;
             --text-dim: #8892a8;
             --text-muted: #5a6478;
-            --radius: 16px;
-            --radius-sm: 10px;
+            --map-bg: #0d1117;
+            --gradient-results: linear-gradient(135deg, #1a2035, #1e2845);
+            --gradient-dest: linear-gradient(135deg, #1a2535, #1e2845);
+            --item-bg: rgba(0, 0, 0, 0.25);
         }
 
         html,
@@ -65,11 +93,10 @@
             z-index: 1;
         }
 
-        /* MAP */
         #map {
             width: 100%;
             height: 100%;
-            background: #0d1117
+            background: var(--map-bg);
         }
 
         .leaflet-touch .leaflet-control-layers,
@@ -120,8 +147,15 @@
         }
 
         #panel.collapsed {
-            max-height: 200px;
+            max-height: 280px;
             overflow: hidden;
+        }
+
+        #panel.collapsed .options-row,
+        #panel.collapsed .live-stats-row2,
+        #panel.collapsed .weak-gps-warning,
+        #panel.collapsed .gps-banner {
+            display: none !important;
         }
 
         #panel::-webkit-scrollbar {
@@ -334,7 +368,7 @@
 
         /* RESULTS CARD */
         .results-card {
-            background: linear-gradient(135deg, var(--card), #1e2845);
+            background: var(--gradient-results);
             border: 1px solid var(--primary);
             border-radius: var(--radius);
             padding: 16px;
@@ -364,7 +398,7 @@
         }
 
         .result-item {
-            background: rgba(0, 0, 0, .25);
+            background: var(--item-bg);
             border-radius: 8px;
             padding: 10px;
             text-align: center
@@ -388,7 +422,7 @@
             color: var(--text-muted);
             line-height: 1.5;
             padding: 8px;
-            background: rgba(0, 0, 0, .2);
+            background: var(--item-bg);
             border-radius: 8px;
             border-left: 3px solid var(--accent)
         }
@@ -782,7 +816,7 @@
 
         .surcharge-input {
             width: 50px;
-            background: rgba(0, 0, 0, 0.2);
+            background: var(--item-bg);
             border: 1px solid var(--border);
             color: var(--primary);
             font-size: 1rem;
@@ -936,7 +970,7 @@
         }
 
         .result-item-sm {
-            background: rgba(0, 0, 0, .2);
+            background: var(--item-bg);
             border-radius: 8px;
             padding: 8px 6px;
             text-align: center;
@@ -1418,8 +1452,8 @@
 
         /* DESTINATION FARE CARD ON PANEL */
         .dest-fare-card {
-            background: linear-gradient(135deg, #1a2535, #1e2845);
-            border: 1px solid var(--primary-dark);
+            background: var(--gradient-dest);
+            border: 1px solid var(--border);
             border-radius: var(--radius-sm);
             padding: 12px 14px;
             display: none;
@@ -1463,7 +1497,7 @@
         }
 
         .dest-fare-item {
-            background: rgba(0, 0, 0, 0.25);
+            background: var(--item-bg);
             border-radius: 8px;
             padding: 8px 6px;
             text-align: center;
@@ -1493,6 +1527,136 @@
             text-align: center;
             margin-top: 8px;
         }
+
+        /* ICON SPACING */
+        .sidebar-item-icon i,
+        .stat-label i,
+        .result-label i,
+        .dfl i,
+        .results-title i,
+        .option-toggle i,
+        .dest-fare-dismiss i,
+        .manual-title i,
+        .tip-card i,
+        .history-point-icon i,
+        .btn i {
+            margin-right: 6px;
+        }
+
+        /* SIDEBAR NAVIGATION */
+        .sidebar-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 2999;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s ease;
+            backdrop-filter: blur(2px);
+        }
+
+        .sidebar-overlay.show {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .sidebar {
+            position: fixed;
+            top: 0;
+            right: -280px;
+            width: 280px;
+            height: 100%;
+            background: var(--surface);
+            z-index: 3000;
+            box-shadow: -4px 0 20px rgba(0, 0, 0, 0.3);
+            transition: right 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .sidebar.show {
+            right: 0;
+        }
+
+        .sidebar-header {
+            padding: 24px 20px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: var(--card);
+        }
+
+        .sidebar-title {
+            font-weight: 800;
+            font-size: 1.2rem;
+            color: var(--primary);
+        }
+
+        .sidebar-close {
+            background: none;
+            border: none;
+            font-size: 1.8rem;
+            color: var(--text-muted);
+            cursor: pointer;
+            line-height: 1;
+            padding: 0;
+        }
+
+        .sidebar-content {
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            overflow-y: auto;
+            flex: 1;
+        }
+
+        .sidebar-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 14px 16px;
+            background: var(--item-bg);
+            border-radius: 12px;
+            color: var(--text);
+            font-weight: 600;
+            font-size: 0.95rem;
+            cursor: pointer;
+            border: 1px solid transparent;
+            transition: all 0.2s;
+        }
+
+        .sidebar-item:active {
+            transform: scale(0.98);
+        }
+
+        .sidebar-item-icon {
+            font-size: 1.2rem;
+            width: 24px;
+            text-align: center;
+        }
+
+        .hamburger-btn {
+            background: none;
+            border: none;
+            color: var(--text);
+            font-size: 1.5rem;
+            cursor: pointer;
+            padding: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 8px;
+            transition: background 0.2s;
+        }
+
+        .hamburger-btn:hover {
+            background: rgba(128, 128, 128, 0.1);
+        }
     </style>
 </head>
 
@@ -1503,19 +1667,21 @@
             <div id="markModeHint" class="mark-mode-hint">Tap anywhere on map to drop pin</div>
             <button class="locate-btn" id="btnMarkMode" onclick="toggleMarkMode()" title="Toggle Mark Mode"
                 style="bottom: 130px; border-radius: 8px; width: auto; padding: 0 12px; font-weight: bold; font-size: 0.8rem; display: flex; align-items: center; justify-content: center; gap: 6px; box-shadow: 0 4px 15px rgba(0,212,170,0.4);">
-                <span style="font-size: 1rem">📌</span>
+                <span style="font-size: 1rem"><i class="fa-solid fa-thumbtack"></i></span>
             </button>
             <button class="locate-btn" id="btnLocateDest" onclick="locateDest()" title="Locate Destination"
-                style="bottom: 76px; display: none;">📍</button>
-            <button class="locate-btn" id="btnLocate" onclick="locateMe()" title="Locate Me">🎯</button>
+                style="bottom: 76px; display: none;"><i class="fa-solid fa-location-dot"></i></button>
+            <button class="locate-btn" id="btnLocate" onclick="locateMe()" title="Locate Me"><i
+                    class="fa-solid fa-location-crosshairs"></i></button>
         </div>
         <div class="map-search-container">
             <div class="map-search-box">
-                <span style="color:var(--text-dim)">🔍</span>
+                <span style="color:var(--text-dim)"><i class="fa-solid fa-magnifying-glass"></i></span>
                 <input type="text" id="mapSearchInput" class="map-search-input"
                     placeholder="Search destination in GenSan..." autocomplete="off">
                 <div class="search-spinner" id="searchSpinner"></div>
-                <button class="btn-search-clear" id="btnSearchClear" onclick="clearSearch()">✕</button>
+                <button class="btn-search-clear" id="btnSearchClear" onclick="clearSearch()"><i
+                        class="fa-solid fa-xmark"></i></button>
             </div>
             <div class="map-search-results" id="mapSearchResults"></div>
         </div>
@@ -1525,6 +1691,35 @@
                 <circle class="ring-fg" cx="28" cy="28" r="24" />
             </svg>
         </div>
+
+        <!-- SIDEBAR -->
+        <div class="sidebar-overlay" id="sidebarOverlay" onclick="closeSidebar()"></div>
+        <div class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <div class="sidebar-title">Menu</div>
+                <button class="sidebar-close" onclick="closeSidebar()">×</button>
+            </div>
+            <div class="sidebar-content">
+                <div class="sidebar-item" id="sidebarInstall" onclick="installPwa()"
+                    style="display:none; background: linear-gradient(135deg, var(--accent), #5a4bd1); color: #fff; border:none; box-shadow: 0 2px 8px rgba(108, 92, 231, .3);">
+                    <span class="sidebar-item-icon"><i class="fa-solid fa-download"></i></span>
+                    <span>Install App</span>
+                </div>
+                <div class="sidebar-item" onclick="toggleTheme(); closeSidebar()">
+                    <span class="sidebar-item-icon"><i class="fa-solid fa-moon"></i></span>
+                    <span>Toggle Theme</span>
+                </div>
+                <div class="sidebar-item" onclick="openHistoryModal(); closeSidebar()">
+                    <span class="sidebar-item-icon"><i class="fa-solid fa-clock-rotate-left"></i></span>
+                    <span>Ride History</span>
+                </div>
+                <div class="sidebar-item" onclick="openFareGuide(); closeSidebar()">
+                    <span class="sidebar-item-icon"><i class="fa-solid fa-circle-info"></i></span>
+                    <span>Fare Guide</span>
+                </div>
+            </div>
+        </div>
+
         <div id="panel">
             <div class="drag-handle" onclick="togglePanel()"><span style="opacity: 0;">---</span></div>
             <div class="app-header" onclick="togglePanel()">
@@ -1532,11 +1727,8 @@
                     <span class="app-title">TrikeFare Gensan</span>
                     <span class="app-badge">GPS</span>
                 </div>
-                <div style="display:flex; gap:8px;">
-                    <button class="btn-info" id="btnInstallPwa" onclick="event.stopPropagation(); installPwa()" style="display:none; background: linear-gradient(135deg, var(--accent), #5a4bd1); color: #fff; border:none; box-shadow: 0 2px 8px rgba(108, 92, 231, .3);">⬇️ Install</button>
-                    <button class="btn-info" onclick="event.stopPropagation(); openHistoryModal()">📜 History</button>
-                    <button class="btn-info" onclick="event.stopPropagation(); openFareGuide()">ℹ️ Guide</button>
-                </div>
+                <button class="hamburger-btn" onclick="event.stopPropagation(); openSidebar()"><i
+                        class="fa-solid fa-bars"></i></button>
             </div>
 
             <div class="status-bar">
@@ -1547,26 +1739,27 @@
             <div class="dest-fare-card" id="destFareCard">
                 <div class="dest-fare-header">
                     <div class="dest-fare-name" id="destFareName">—</div>
-                    <button class="dest-fare-dismiss" id="btnDismissDest" onclick="dismissDestFare()"
-                        title="Dismiss">✕</button>
+                    <button class="dest-fare-dismiss" id="btnDismissDest" onclick="dismissDestFare()" title="Dismiss"><i
+                            class="fa-solid fa-xmark"></i></button>
                 </div>
                 <div class="dest-fare-grid">
                     <div class="dest-fare-item">
-                        <div class="dfl">Distance</div>
+                        <div class="dfl"><i class="fa-solid fa-ruler"></i> Distance</div>
                         <div class="dfv" id="destFareDist">—</div>
                     </div>
                     <div class="dest-fare-item">
-                        <div class="dfl">ETA</div>
+                        <div class="dfl"><i class="fa-solid fa-stopwatch"></i> ETA</div>
                         <div class="dfv" id="destFareETA">—</div>
                     </div>
                     <div class="dest-fare-item">
-                        <div class="dfl">Est. Fare</div>
+                        <div class="dfl"><i class="fa-solid fa-coins"></i> Est. Fare</div>
                         <div class="dfv fare-color" id="destFareCost">—</div>
                     </div>
                 </div>
                 <div id="destFareFixedRow"
                     style="display:none; justify-content:space-between; align-items:center; background:rgba(108,92,231,0.1); border-radius:8px; padding:8px 12px; margin-top:8px; border:1px solid rgba(108,92,231,0.2);">
-                    <span style="font-size:0.75rem;color:var(--text-dim);font-weight:600;">Est. Fixed Fare</span>
+                    <span style="font-size:0.75rem;color:var(--text-dim);font-weight:600;"><i
+                            class="fa-solid fa-lock"></i> Est. Fixed Fare</span>
                     <strong style="font-size:1.1rem;color:var(--accent);" id="destFareFixedCost">—</strong>
                 </div>
                 <div class="dest-fare-breakdown" id="destFareBreakdown"></div>
@@ -1574,17 +1767,17 @@
 
             <div class="live-stats">
                 <div class="stat-card" id="distCard">
-                    <div class="stat-label">Distance</div>
+                    <div class="stat-label"><i class="fa-solid fa-ruler"></i> Distance</div>
                     <div class="stat-value" id="liveDistance">0.00</div>
                     <div class="stat-unit">km</div>
                 </div>
                 <div class="stat-card" id="speedCard">
-                    <div class="stat-label">Speed</div>
+                    <div class="stat-label"><i class="fa-solid fa-gauge-high"></i> Speed</div>
                     <div class="stat-value" id="liveSpeed">0</div>
                     <div class="stat-unit">km/h</div>
                 </div>
                 <div class="stat-card" id="fareCard">
-                    <div class="stat-label">Est. Fare</div>
+                    <div class="stat-label"><i class="fa-solid fa-coins"></i> Est. Fare</div>
                     <div class="stat-value fare" id="liveFare">₱15</div>
                     <div class="stat-unit">pesos</div>
                 </div>
@@ -1592,12 +1785,12 @@
 
             <div class="live-stats-row2">
                 <div class="stat-card" id="timerCard">
-                    <div class="stat-label">Duration</div>
+                    <div class="stat-label"><i class="fa-solid fa-clock"></i> Duration</div>
                     <div class="stat-value timer" id="liveTimer">00:00</div>
                     <div class="stat-unit">min:sec</div>
                 </div>
                 <div class="stat-card" id="avgSpeedCard">
-                    <div class="stat-label">Avg Speed</div>
+                    <div class="stat-label"><i class="fa-solid fa-gauge"></i> Avg Speed</div>
                     <div class="stat-value" id="liveAvgSpeed">0</div>
                     <div class="stat-unit">km/h</div>
                 </div>
@@ -1605,7 +1798,7 @@
 
             <div class="options-row">
                 <div class="option-toggle">
-                    <span>⚙️ Base Fare (₱)</span>
+                    <span><i class="fa-solid fa-gear"></i> Base Fare (₱)</span>
                 </div>
                 <input type="number" id="baseFareAmount" value="20" min="15" max="100" step="1" class="surcharge-input"
                     oninput="updateBaseFare()">
@@ -1617,7 +1810,7 @@
                         <input type="checkbox" id="nightToggle" onchange="toggleNightFareInput()">
                         <span class="slider"></span>
                     </label>
-                    <span>Night Surcharge (₱)</span>
+                    <span><i class="fa-solid fa-moon"></i> Night Surcharge (₱)</span>
                 </div>
                 <input type="number" id="nightAmount" value="5" min="0" max="50" step="1" class="surcharge-input"
                     oninput="updateAllFares()">
@@ -1625,8 +1818,11 @@
 
             <div class="options-row">
                 <div class="option-toggle" style="flex:1;">
-                    <span>🔒 Fixed Fare (₱)</span>
-                    <span id="btnClearFixed" onclick="clearFixedFare()" style="display:none; color:var(--danger, #ff4757); font-size:0.75rem; font-weight:700; cursor:pointer; padding:4px; margin-left:auto;">✕ Clear</span>
+                    <span><i class="fa-solid fa-lock"></i> Fixed Fare (₱)</span>
+                    <span id="btnClearFixed" onclick="clearFixedFare()"
+                        style="display:none; color:var(--danger, #ff4757); font-size:0.75rem; font-weight:700; cursor:pointer; padding:4px; margin-left:auto;"><i
+                            class="fa-solid fa-xmark"></i>
+                        Clear</span>
                 </div>
                 <input type="number" id="fixedFareAmount" placeholder="Opt" min="0" step="1" class="surcharge-input"
                     style="width: 60px; margin-left:10px;" oninput="updateFixedFare()">
@@ -1634,52 +1830,53 @@
 
             <div class="btn-row">
                 <button class="btn btn-start" id="btnStart" onclick="startRide()">
-                    <span class="icon">▶</span> Start Ride
+                    <span class="icon"><i class="fa-solid fa-play"></i></span> Start Ride
                 </button>
                 <button class="btn btn-stop" id="btnStop" onclick="stopRide()" disabled>
-                    <span class="icon">■</span> Stop
+                    <span class="icon"><i class="fa-solid fa-stop"></i></span> Stop
                 </button>
-                <button class="btn btn-reset" id="btnReset" onclick="resetRide()" disabled>↺</button>
+                <button class="btn btn-reset" id="btnReset" onclick="resetRide()" disabled><i
+                        class="fa-solid fa-arrow-rotate-right"></i></button>
             </div>
 
             <div class="weak-gps-warning" id="weakGpsWarning">
-                ⚠️ Weak GPS signal — results may be inaccurate
+                <i class="fa-solid fa-triangle-exclamation"></i> Weak GPS signal — results may be inaccurate
             </div>
 
             <div class="gps-banner" id="gpsBanner">
-                <strong>📍 GPS Unavailable</strong><br>
+                <strong><i class="fa-solid fa-location-dot"></i> GPS Unavailable</strong><br>
                 Location access was denied or is not supported. Use manual route selection below.
             </div>
 
             <div class="results-card" id="resultsCard">
-                <div class="results-title">🏁 Ride Summary</div>
+                <div class="results-title"><i class="fa-solid fa-flag-checkered"></i> Ride Summary</div>
                 <div class="results-grid">
                     <div class="result-item">
-                        <div class="result-label">Total Distance</div>
+                        <div class="result-label"><i class="fa-solid fa-ruler"></i> Total Distance</div>
                         <div class="result-value" id="resultDist">0.00 km</div>
                     </div>
                     <div class="result-item">
-                        <div class="result-label">Suggested Fare</div>
+                        <div class="result-label"><i class="fa-solid fa-coins"></i> Suggested Fare</div>
                         <div class="result-value fare" id="resultFare">₱15</div>
                     </div>
                 </div>
                 <div class="results-grid-3">
                     <div class="result-item-sm">
-                        <div class="result-label">Duration</div>
+                        <div class="result-label"><i class="fa-solid fa-clock"></i> Duration</div>
                         <div class="result-value" id="resultDuration">00:00</div>
                     </div>
                     <div class="result-item-sm">
-                        <div class="result-label">Avg Speed</div>
+                        <div class="result-label"><i class="fa-solid fa-gauge"></i> Avg Speed</div>
                         <div class="result-value" id="resultAvgSpeed">0 km/h</div>
                     </div>
                     <div class="result-item-sm">
-                        <div class="result-label">Max Speed</div>
+                        <div class="result-label"><i class="fa-solid fa-rocket"></i> Max Speed</div>
                         <div class="result-value" id="resultMaxSpeed">0 km/h</div>
                     </div>
                 </div>
                 <div class="fare-breakdown" id="fareBreakdown"></div>
                 <div class="passenger-row">
-                    <label>👥 Passengers:</label>
+                    <label><i class="fa-solid fa-user-group"></i> Passengers:</label>
                     <div class="passenger-controls">
                         <button onclick="changePassengers(-1)" id="pMinus">−</button>
                         <span class="p-count" id="passengerCount">1</span>
@@ -1689,16 +1886,17 @@
                 </div>
                 <div class="btn-row" style="margin-top:8px">
                     <button class="btn btn-share" onclick="shareRide()">
-                        📤 Share Ride
+                        <i class="fa-solid fa-share-nodes"></i> Share Ride
                     </button>
                 </div>
-                <div class="disclaimer">⚠️ This is an estimate based on standard tricycle rates in General Santos City.
+                <div class="disclaimer"><i class="fa-solid fa-triangle-exclamation"></i> This is an estimate based on
+                    standard tricycle rates in General Santos City.
                     Actual
                     fares may vary.</div>
             </div>
 
             <div class="manual-section" id="manualSection">
-                <div class="manual-title">📋 Manual Route Selector</div>
+                <div class="manual-title"><i class="fa-solid fa-list-check"></i> Manual Route Selector</div>
                 <div class="select-wrap">
                     <select id="routeSelect" onchange="calcManualFare()">
                         <option value="">— Select a route —</option>
@@ -1709,7 +1907,8 @@
                     <div class="stat-value" id="manualDist" style="font-size:1.1rem">—</div>
                     <div class="stat-label" style="margin-top:6px">Suggested Fare</div>
                     <div class="stat-value fare" id="manualFare" style="font-size:1.3rem">—</div>
-                    <div class="disclaimer" style="margin-top:10px;text-align:left">⚠️ Estimate based on standard
+                    <div class="disclaimer" style="margin-top:10px;text-align:left"><i
+                            class="fa-solid fa-triangle-exclamation"></i> Estimate based on standard
                         tricycle rates
                         in General Santos City.</div>
                 </div>
@@ -1751,7 +1950,8 @@
                 </div>
 
                 <div class="tip-card">
-                    💡 <strong>Tip:</strong> Short trips within the city center usually stay within the base fare range.
+                    <i class="fa-solid fa-lightbulb"></i> <strong>Tip:</strong> Short trips within the city center
+                    usually stay within the base fare range.
                 </div>
 
                 <div class="modal-card">
@@ -1841,7 +2041,8 @@
                 <div class="modal-card">
                     <div style="display:flex; justify-content:space-between; align-items:center;">
                         <div class="modal-card-title" style="margin-bottom:0;">Recent Rides</div>
-                        <button class="clear-history-btn" id="clearHistBtn" onclick="clearHistory()">🗑 Clear</button>
+                        <button class="clear-history-btn" id="clearHistBtn" onclick="clearHistory()"><i
+                                class="fa-solid fa-trash"></i> Clear</button>
                     </div>
                     <div class="history-list show" id="historyList" style="margin-top:12px;"></div>
                 </div>
@@ -1851,6 +2052,19 @@
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script>
+        // ============================================================
+        // SIDEBAR NAVIGATION JS
+        // ============================================================
+        function openSidebar() {
+            document.getElementById('sidebarOverlay').classList.add('show');
+            document.getElementById('sidebar').classList.add('show');
+        }
+
+        function closeSidebar() {
+            document.getElementById('sidebarOverlay').classList.remove('show');
+            document.getElementById('sidebar').classList.remove('show');
+        }
+
         // ============================================================
         // CONFIG — All tunable constants in one place
         // ============================================================
@@ -1913,9 +2127,43 @@
         }
 
         // ============================================================
+        // THEME LOGIC
+        // ============================================================
+        let currentTheme = localStorage.getItem('trikefareTheme') || 'light';
+        if (currentTheme === 'dark') {
+            document.documentElement.setAttribute('data-theme', 'dark');
+        }
+
+        function toggleTheme() {
+            currentTheme = currentTheme === 'light' ? 'dark' : 'light';
+            if (currentTheme === 'dark') {
+                document.documentElement.setAttribute('data-theme', 'dark');
+            } else {
+                document.documentElement.removeAttribute('data-theme');
+            }
+            localStorage.setItem('trikefareTheme', currentTheme);
+            updateMapTiles();
+        }
+
+        function getTileLayerUrl() {
+            return currentTheme === 'dark'
+                ? 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'
+                : 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png';
+        }
+
+        function updateMapTiles() {
+            if (map && tileLayer) {
+                map.removeLayer(tileLayer);
+                tileLayer = L.tileLayer(getTileLayerUrl(), {
+                    maxZoom: 19
+                }).addTo(map);
+            }
+        }
+
+        // ============================================================
         // STATE
         // ============================================================
-        let map, userMarker, routeLine, accuracyCircle;
+        let map, userMarker, routeLine, accuracyCircle, tileLayer;
         let watchId = null;
         let isTracking = false;
         let destinationMarker = null;
@@ -1945,6 +2193,31 @@
             if (!panel.classList.contains('collapsed')) {
                 panel.scrollTop = 0;
             }
+
+            // Smooth map animation
+            let start = null;
+            const duration = 400; // Match CSS transition
+            const targetPos = (typeof currentGPSPos !== 'undefined' && currentGPSPos) ? currentGPSPos : CONFIG.CENTER;
+
+            function step(timestamp) {
+                if (!start) start = timestamp;
+                const progress = timestamp - start;
+
+                if (map) {
+                    map.invalidateSize({ pan: false });
+                    map.setView(targetPos, map.getZoom(), { animate: false });
+                }
+
+                if (progress < duration) {
+                    window.requestAnimationFrame(step);
+                } else {
+                    if (map) {
+                        map.invalidateSize();
+                        map.setView(targetPos, map.getZoom(), { animate: true });
+                    }
+                }
+            }
+            window.requestAnimationFrame(step);
         }
 
         // ============================================================
@@ -2048,7 +2321,7 @@
             destinationMarker.bindPopup(
                 `<div style="text-align:center;font-family:'Inter',sans-serif;color:#333;padding:4px 8px;">
           <div style="font-weight:800;font-size:1rem;color:#e55;">${name}</div>
-          <div style="font-size:0.78rem;color:#888;margin-top:4px;">📡 Calculating route...</div>
+          <div style="font-size:0.78rem;color:#888;margin-top:4px;"><i class="fa-solid fa-satellite-dish"></i> Calculating route...</div>
         </div>`,
                 { closeButton: false }
             ).openPopup();
@@ -2059,6 +2332,8 @@
 
             let durationSec = null;
             let calculatedRoutes = [];
+            const origin = originLatLng || CONFIG.CENTER;
+            const fallbackDist = haversine(origin[0], origin[1], lat, lon);
 
             // Try OSRM road routing if we have a real origin
             // Request up to 3 alternatives
@@ -2080,16 +2355,27 @@
 
                             // Classify routes
                             let fastest = [...calculatedRoutes].sort((a, b) => a.durationSec - b.durationSec)[0];
-                            fastest.label = 'Fastest';
+                            fastest.label = 'Fastest route';
 
                             let shortest = [...calculatedRoutes].sort((a, b) => a.distKm - b.distKm)[0];
                             if (shortest === fastest && calculatedRoutes.length > 1) {
                                 shortest = [...calculatedRoutes].sort((a, b) => a.distKm - b.distKm)[1];
                             }
-                            if (!shortest.label) shortest.label = 'Shortest';
+
+                            if (shortest === fastest) {
+                                // Add a straight line fallback if OSRM only returned 1 route
+                                calculatedRoutes.push({
+                                    distKm: fallbackDist,
+                                    durationSec: fastest.durationSec * 1.1, // Ensure it sorts AFTER the real fastest route
+                                    routeCoords: [[oLat, oLon], [lat, lon]],
+                                    label: 'Short route'
+                                });
+                            } else {
+                                if (!shortest.label) shortest.label = 'Short route';
+                            }
 
                             calculatedRoutes.forEach((rt, idx) => {
-                                if (!rt.label) rt.label = 'Alternate';
+                                if (!rt.label) rt.label = 'Alternate route';
                             });
 
                             calculatedRoutes.sort((a, b) => a.durationSec - b.durationSec);
@@ -2100,26 +2386,33 @@
                 }
             }
 
-            // Fall back to haversine if OSRM failed
-            const origin = originLatLng || CONFIG.CENTER;
-            const fallbackDist = haversine(origin[0], origin[1], lat, lon);
-
-            let distKm, usedRoad = false;
-            if (calculatedRoutes.length > 0) {
-                distKm = calculatedRoutes[0].distKm;
-                durationSec = calculatedRoutes[0].durationSec;
-                usedRoad = true;
-            } else {
-                distKm = fallbackDist;
+            // Fall back to haversine if OSRM failed completely or no real GPS origin
+            if (calculatedRoutes.length === 0) {
+                calculatedRoutes.push({
+                    distKm: fallbackDist * 1.3, // approximate road distance
+                    durationSec: (fallbackDist * 1.3 / 20) * 3600, // assuming 20km/h
+                    routeCoords: [[origin[0], origin[1]], [lat, lon]],
+                    label: 'Fastest route'
+                });
+                calculatedRoutes.push({
+                    distKm: fallbackDist,
+                    durationSec: (fallbackDist / 20) * 3600, // straight line
+                    routeCoords: [[origin[0], origin[1]], [lat, lon]],
+                    label: 'Short route'
+                });
             }
+
+            let distKm = calculatedRoutes[0].distKm;
+            durationSec = calculatedRoutes[0].durationSec;
+            let usedRoad = calculatedRoutes[0].routeCoords.length > 2;
 
             // Persist context so fare changes can re-render the popup without re-routing
             const originLabel = hasRealGPS
-                ? '📍 From your location'
-                : (lastPos ? '📍 From last known position' : '⚠️ GPS unavailable — city center used');
-            const routeLabel = usedRoad ? '🛣️ ' + calculatedRoutes[0].label : '📐 Straight-line (est.)';
+                ? 'From your location'
+                : (lastPos ? 'From last known position' : '<i class="fa-solid fa-triangle-exclamation"></i> GPS unavailable — city center used');
+            const routeLabel = usedRoad ? '<i class="fa-solid fa-route"></i> ' + calculatedRoutes[0].label : '<i class="fa-solid fa-ruler-combined"></i> Straight-line (est.)';
 
-            lastDestination = { distKm, name, originLabel, routeLabel, durationSec, calculatedRoutes, selectedRouteIndex: 0 };
+            lastDestination = { distKm, name, originLabel, routeLabel, durationSec, calculatedRoutes, selectedRouteIndex: 0, destCoords: [lat, lon] };
 
             renderDestinationRoute();
             updateDestinationPopup();
@@ -2229,7 +2522,7 @@
             const etaLabel = formatETA(durationSec);
             const etaRow = etaLabel
                 ? `<div style="display:flex;justify-content:space-between;align-items:center;background:#f0f4ff;border-radius:6px;padding:6px 10px;margin-bottom:4px;">
-            <span style="font-size:0.72rem;color:#555;">⏱️ Est. travel time</span>
+            <span style="font-size:0.72rem;color:#555;"><i class="fa-solid fa-stopwatch"></i> Est. travel time</span>
             <strong style="font-size:0.92rem;color:#3a3abd;">${etaLabel}</strong>
            </div>`
                 : '';
@@ -2240,12 +2533,12 @@
 
             const fixedRow = showFixed ? `
           <div style="display:flex;justify-content:space-between;align-items:center;background:rgba(108,92,231,0.1);border-radius:6px;padding:6px 10px;margin-top:4px;border:1px solid rgba(108,92,231,0.2);">
-            <span style="font-size:0.72rem;color:#555;font-weight:600;">Est. Fixed Fare</span>
+            <span style="font-size:0.72rem;color:#555;font-weight:600;"><i class="fa-solid fa-lock"></i> Est. Fixed Fare</span>
             <strong style="font-size:1.1rem;color:#6c5ce7;">₱${computedFixed}</strong>
           </div>` : '';
 
             let routeButtonsHtml = '';
-            if (lastDestination.calculatedRoutes && lastDestination.calculatedRoutes.length > 1) {
+            if (lastDestination.calculatedRoutes && lastDestination.calculatedRoutes.length > 0) {
                 routeButtonsHtml = `<div style="display:flex;gap:4px;margin-bottom:8px;flex-wrap:wrap;">`;
                 lastDestination.calculatedRoutes.forEach((rt, idx) => {
                     const isSelected = idx === lastDestination.selectedRouteIndex;
@@ -2259,7 +2552,7 @@
             const popupContent = `
         <div style="font-family:'Inter',sans-serif;color:#1a1a2e;min-width:170px;">
           <div style="font-weight:800;font-size:1rem;color:#c0392b;margin-bottom:6px;">${name}</div>
-          <div style="font-size:0.7rem;color:#666;margin-bottom:8px;">${originLabel}</div>
+          <div style="font-size:0.7rem;color:#666;margin-bottom:8px;"><i class="fa-solid fa-location-crosshairs"></i> ${originLabel}</div>
           ${routeButtonsHtml}
           <div style="display:flex;justify-content:space-between;align-items:center;background:#f5f5f5;border-radius:6px;padding:6px 10px;margin-bottom:4px;">
             <span style="font-size:0.72rem;color:#555;">${routeLabel}</span>
@@ -2294,7 +2587,7 @@
             const fareBreak = getFareBreakdown(distKm);
             const etaLabel = formatETA(durationSec) || '—';
 
-            DOM.destFareName.textContent = '📍 ' + name;
+            DOM.destFareName.textContent = name;
             DOM.destFareDist.textContent = distKm.toFixed(2) + ' km';
             DOM.destFareETA.textContent = etaLabel;
             DOM.destFareCost.textContent = '₱' + estFare;
@@ -2519,22 +2812,22 @@
                 return;
             }
             if (marker._animId) cancelAnimationFrame(marker._animId);
-            
+
             const startTime = performance.now();
             const targetLat = newLatLngArray[0] !== undefined ? newLatLngArray[0] : newLatLngArray.lat;
             const targetLng = newLatLngArray[1] !== undefined ? newLatLngArray[1] : newLatLngArray.lng;
-            
+
             function step(currentTime) {
                 const elapsed = currentTime - startTime;
                 let progress = elapsed / duration;
                 if (progress > 1) progress = 1;
-                
+
                 const ease = 1 - Math.pow(1 - progress, 3);
                 const lat = startLatLng.lat + (targetLat - startLatLng.lat) * ease;
                 const lng = startLatLng.lng + (targetLng - startLatLng.lng) * ease;
-                
+
                 marker.setLatLng([lat, lng]);
-                
+
                 if (progress < 1) {
                     marker._animId = requestAnimationFrame(step);
                 } else {
@@ -2587,7 +2880,7 @@
                 center: CONFIG.CENTER, zoom: 14,
                 zoomControl: true, attributionControl: false
             });
-            L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+            tileLayer = L.tileLayer(getTileLayerUrl(), {
                 maxZoom: 19
             }).addTo(map);
             L.control.attribution({ prefix: false, position: 'bottomright' })
@@ -2696,8 +2989,6 @@
         // GPS POSITION HANDLER — With throttling + filtering
         // ============================================================
         function onPosition(pos) {
-            if (!isTracking) return;
-
             const now = pos.timestamp || Date.now();
             const { latitude: lat, longitude: lng, accuracy } = pos.coords;
 
@@ -2717,9 +3008,10 @@
             }
 
             const latlng = [lat, lng];
+            let distKm = 0;
 
             if (lastPos) {
-                const distKm = haversine(lastPos[0], lastPos[1], lat, lng);
+                distKm = haversine(lastPos[0], lastPos[1], lat, lng);
                 const timeDeltaH = (now - lastTimestamp) / 3600000; // ms -> hours
 
                 // 4) NOISE FILTER — Ignore tiny movements (GPS jitter)
@@ -2735,30 +3027,49 @@
                 const speedKmh = timeDeltaH > 0 ? distKm / timeDeltaH : 0;
                 if (speedKmh > CONFIG.MAX_SPEED_KMH) return;
 
-                totalDistance += distKm;
-                currentSpeed = speedKmh;
-                if (speedKmh > maxSpeed) maxSpeed = speedKmh;
+                if (isTracking) {
+                    totalDistance += distKm;
+                    currentSpeed = speedKmh;
+                    if (speedKmh > maxSpeed) maxSpeed = speedKmh;
+                }
             }
 
             // Update state
             lastPos = latlng;
             currentGPSPos = latlng; // Always keep a fresh GPS fix available
             lastTimestamp = now;
-            positions.push(latlng);
 
-            // Update map
+            if (isTracking) {
+                positions.push(latlng);
+                routeLine.setLatLngs(positions);
+            }
+
+            // Update map marker
             smoothMoveMarker(userMarker, latlng, 1000);
             accuracyCircle.setLatLng(latlng);
             accuracyCircle.setRadius(accuracy);
-            const markerEl = userMarker.getElement();
-            if (markerEl) markerEl.classList.add('tracking');
-            routeLine.setLatLngs(positions);
-            map.panTo(latlng, { animate: true, duration: 0.5 });
 
-            // Update UI
-            updateLiveStats();
-            setCardActive(true);
-            setStatus(`Tracking · ${positions.length} pts · ${totalDistance.toFixed(2)} km`, 'tracking');
+            const markerEl = userMarker.getElement();
+
+            if (isTracking) {
+                if (markerEl) markerEl.classList.add('tracking');
+                map.panTo(latlng, { animate: true, duration: 0.5 });
+
+                // Update UI
+                updateLiveStats();
+                setCardActive(true);
+                setStatus(`Tracking · ${positions.length} pts · ${totalDistance.toFixed(2)} km`, 'tracking');
+            } else {
+                if (markerEl) markerEl.classList.remove('tracking');
+                // Dynamic Route Updates in Idle Mode
+                if (lastDestination && distKm > 0.02) { // 20m movement triggers a recalculation
+                    // Debounce it lightly so we don't spam
+                    if (window._idleRouteTimer) clearTimeout(window._idleRouteTimer);
+                    window._idleRouteTimer = setTimeout(() => {
+                        selectDestination(lastDestination.destCoords[0], lastDestination.destCoords[1], lastDestination.name);
+                    }, 1000);
+                }
+            }
         }
 
         function onGPSError(err) {
@@ -2776,13 +3087,16 @@
             if (!navigator.geolocation) { onGPSError({ message: 'Not supported' }); return; }
 
             isTracking = true;
-            totalDistance = 0; positions = []; lastPos = null;
-            lastTimestamp = 0; currentSpeed = 0; maxSpeed = 0;
+            totalDistance = 0; positions = [];
+            currentSpeed = 0; maxSpeed = 0;
             weakSignalCount = 0; lastRenderedDist = -1; lastRenderedSpeed = -1;
             passengerCount = 1;
             rideStartTime = Date.now();
             routeLine.setLatLngs([]);
-            accuracyCircle.setRadius(0);
+            if (currentGPSPos) {
+                positions.push(currentGPSPos);
+                routeLine.setLatLngs(positions);
+            }
 
             setButtonStates(false, true, false);
             setOptionsState(true);
@@ -2794,19 +3108,14 @@
             DOM.liveSpeed.textContent = '0';
             DOM.liveTimer.textContent = '00:00';
             DOM.liveAvgSpeed.textContent = '0';
-            setStatus('Acquiring GPS signal...', 'tracking');
+            setStatus('Ride started...', 'tracking');
             updateLiveStats();
 
             timerInterval = setInterval(tickTimer, 1000);
-
-            watchId = navigator.geolocation.watchPosition(onPosition, onGPSError, {
-                enableHighAccuracy: true, maximumAge: 0, timeout: 15000
-            });
         }
 
         function stopRide() {
             isTracking = false; currentSpeed = 0;
-            if (watchId !== null) { navigator.geolocation.clearWatch(watchId); watchId = null; }
             if (timerInterval) { clearInterval(timerInterval); timerInterval = null; }
 
             const markerEl = userMarker.getElement();
@@ -2845,12 +3154,11 @@
         }
 
         function resetRide() {
-            totalDistance = 0; positions = []; lastPos = null;
-            lastTimestamp = 0; currentSpeed = 0; maxSpeed = 0;
+            totalDistance = 0; positions = [];
+            currentSpeed = 0; maxSpeed = 0;
             lastRenderedDist = -1; lastRenderedSpeed = -1;
             rideStartTime = 0; passengerCount = 1;
             routeLine.setLatLngs([]);
-            accuracyCircle.setRadius(0);
             if (timerInterval) { clearInterval(timerInterval); timerInterval = null; }
 
             setButtonStates(true, false, false);
@@ -2861,7 +3169,11 @@
             DOM.liveAvgSpeed.textContent = '0';
             updateLiveStats();
             setStatus('Ready — tap Start Ride to begin', '');
-            map.setView(CONFIG.CENTER, 14, { animate: true });
+            if (currentGPSPos) {
+                map.setView(currentGPSPos, 15, { animate: true });
+            } else {
+                map.setView(CONFIG.CENTER, 14, { animate: true });
+            }
         }
 
         // ============================================================
@@ -2921,7 +3233,10 @@
                 destination,
                 routeSummary,
                 breakdown: { base: breakdown.base, extra: breakdown.extra, night: breakdown.night, isFixed: breakdown.isFixed },
-                paymentStatus: 'Paid (Cash)'
+                paymentStatus: 'Paid (Cash)',
+                path: positions.length > 0 ? positions : null, // Store full route
+                timestamp: endDate.toISOString(),
+                destCoords: lastDestination ? lastDestination.destCoords : null
             });
 
             if (history.length > CONFIG.MAX_HISTORY) history.pop();
@@ -2940,7 +3255,7 @@
             }
             DOM.clearHistBtn.style.display = '';
 
-            DOM.historyList.innerHTML = history.map(h => {
+            DOM.historyList.innerHTML = history.map((h, index) => {
                 const durStr = h.duration ? formatTime(h.duration) : '--:--';
 
                 // Backwards compatibility for old history format
@@ -2968,12 +3283,15 @@
                 <div class="history-item">
                     <div class="history-header">
                         <div class="history-date">${dateStr}</div>
-                        <div class="history-status">Completed</div>
+                        <div style="display:flex;gap:6px;">
+                            <div class="history-status">Completed</div>
+                            <button onclick="deleteHistoryItem(${index})" style="background:none;border:none;color:var(--danger);cursor:pointer;font-size:1rem;" title="Delete Ride"><i class="fa-solid fa-trash"></i></button>
+                        </div>
                     </div>
                     
                     <div class="history-route">
                         <div class="history-point">
-                            <div class="history-point-icon">🟢</div>
+                            <div class="history-point-icon" style="color: var(--primary);"><i class="fa-solid fa-circle-dot"></i></div>
                             <div class="history-point-details">
                                 <div class="history-point-name">${orig}</div>
                                 <div class="history-point-time">${sTime}</div>
@@ -2981,7 +3299,7 @@
                         </div>
                         <div class="history-connector"></div>
                         <div class="history-point">
-                            <div class="history-point-icon">📍</div>
+                            <div class="history-point-icon" style="color: var(--danger);"><i class="fa-solid fa-location-dot"></i></div>
                             <div class="history-point-details">
                                 <div class="history-point-name">${dest}</div>
                                 <div class="history-point-time">${eTime}</div>
@@ -2990,27 +3308,27 @@
                     </div>
                     
                     <div style="font-size: 0.7rem; color: var(--text-dim); margin-top: 4px;">
-                        🛣️ ${rSum}
+                        <i class="fa-solid fa-route"></i> ${rSum}
                     </div>
 
                     <div class="history-stats">
                         <div class="h-stat">
-                            <div class="h-stat-label">Distance</div>
+                            <div class="h-stat-label"><i class="fa-solid fa-ruler"></i> Distance</div>
                             <div class="h-stat-val">${h.distance} km</div>
                         </div>
                         <div class="h-stat">
-                            <div class="h-stat-label">Duration</div>
+                            <div class="h-stat-label"><i class="fa-solid fa-clock"></i> Duration</div>
                             <div class="h-stat-val">${durStr}</div>
                         </div>
                         <div class="h-stat">
-                            <div class="h-stat-label">Fare</div>
+                            <div class="h-stat-label"><i class="fa-solid fa-coins"></i> Fare</div>
                             <div class="h-stat-val fare" style="font-size: 1.1rem;">₱${h.fare}</div>
                             ${h.fixedFare ? `<div style="font-size:0.7rem;color:var(--accent);font-weight:700;margin-top:2px;">Est. Fixed: ₱${h.fixedFare}</div>` : ''}
                         </div>
                     </div>
                     
                     <div class="history-payment">
-                        ${bdStr ? `<span>${bdStr}</span> &bull; ` : ''}💳 ${pmt}
+                        ${bdStr ? `<span>${bdStr}</span> &bull; ` : ''}<i class="fa-solid fa-wallet"></i> ${pmt}
                     </div>
                 </div>`;
             }).join('');
@@ -3031,6 +3349,17 @@
             localStorage.removeItem('trikefareHistory');
             renderHistory();
             updateStatsDashboard();
+        }
+
+        function deleteHistoryItem(index) {
+            if (!confirm('Delete this ride record?')) return;
+            const history = JSON.parse(localStorage.getItem('trikefareHistory') || '[]');
+            if (index >= 0 && index < history.length) {
+                history.splice(index, 1);
+                localStorage.setItem('trikefareHistory', JSON.stringify(history));
+                renderHistory();
+                updateStatsDashboard();
+            }
         }
 
         // ============================================================
@@ -3068,8 +3397,8 @@
             } else {
                 navigator.clipboard.writeText(text).then(() => {
                     const btn = document.querySelector('.btn-share');
-                    btn.textContent = '✅ Copied!';
-                    setTimeout(() => { btn.innerHTML = '📤 Share Ride'; }, 2000);
+                    btn.innerHTML = '<i class="fa-solid fa-check"></i> Copied!';
+                    setTimeout(() => { btn.innerHTML = '<i class="fa-solid fa-share-nodes"></i> Share Ride'; }, 2000);
                 });
             }
         }
@@ -3170,6 +3499,16 @@
         updateBaseFare();
         toggleNightFareInput();
 
+        // Initialize global watch position for idle tracking
+        if (navigator.geolocation) {
+            watchId = navigator.geolocation.watchPosition(onPosition, onGPSError, {
+                enableHighAccuracy: true, maximumAge: 0, timeout: 15000
+            });
+        } else {
+            onGPSError({ message: 'GPS not supported' });
+        }
+
+        // Keep initial get location for faster startup
         navigator.geolocation?.getCurrentPosition(
             pos => {
                 const latlng = [pos.coords.latitude, pos.coords.longitude];
@@ -3188,7 +3527,7 @@
         // PWA & SERVICE WORKER
         // ============================================================
         let deferredPrompt;
-        const btnInstallPwa = document.getElementById('btnInstallPwa');
+        const btnInstallPwa = document.getElementById('sidebarInstall');
 
         window.addEventListener('beforeinstallprompt', (e) => {
             e.preventDefault();
