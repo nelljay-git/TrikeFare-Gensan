@@ -3205,7 +3205,7 @@
             DOM.liveTimer.textContent = '00:00';
             DOM.liveAvgSpeed.textContent = '0';
             updateLiveStats();
-            setStatus('Ready — tap Start', '');
+            setStatus('Active', '');
             if (currentGPSPos) {
                 map.setView(currentGPSPos, 15, { animate: true });
             } else {
@@ -3554,7 +3554,7 @@
                 accuracyCircle.setLatLng(latlng);
                 accuracyCircle.setRadius(pos.coords.accuracy || 0);
                 map.setView(latlng, 15, { animate: true });
-                setStatus('GPS ready — tap Start', '');
+                setStatus('GPS Active', '');
             },
             () => onGPSError({ message: 'denied' }),
             { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
