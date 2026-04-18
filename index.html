@@ -7,6 +7,9 @@
     <meta name="description"
         content="TrikeFare Gensan - GPS-based tricycle fare calculator for General Santos City commuters">
     <meta name="theme-color" content="#0a0e1a">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+    <meta http-equiv="Pragma" content="no-cache" />
+    <meta http-equiv="Expires" content="0" />
     <link rel="manifest" href="/manifest.json">
     <link rel="apple-touch-icon" href="/icon-192x192.png">
     <title>TrikeFare Gensan</title>
@@ -3558,9 +3561,23 @@
 
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
-                navigator.serviceWorker.register('/sw.js').catch(err => {
-                    console.warn('SW registration failed:', err);
-                });
+                navigator.serviceWorker.register('/sw.js', { updateViaCache: 'none' })
+                    .then(registration => {
+                        // Force check for updates on every page load
+                        registration.update();
+                    })
+                    .catch(err => {
+                        console.warn('SW registration failed:', err);
+                    });
+            });
+
+            // Reload page if a new service worker takes over
+            let refreshing = false;
+            navigator.serviceWorker.addEventListener('controllerchange', () => {
+                if (!refreshing) {
+                    refreshing = true;
+                    window.location.reload();
+                }
             });
         }
     </script>
