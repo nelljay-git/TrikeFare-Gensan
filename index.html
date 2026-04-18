@@ -3554,7 +3554,7 @@
                 accuracyCircle.setLatLng(latlng);
                 accuracyCircle.setRadius(pos.coords.accuracy || 0);
                 map.setView(latlng, 15, { animate: true });
-                setStatus('GPS ready — tap Start Ride', '');
+                setStatus('GPS ready — tap Start', '');
             },
             () => onGPSError({ message: 'denied' }),
             { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
