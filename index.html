@@ -1744,7 +1744,7 @@
 
             <div class="status-bar">
                 <span class="status-dot" id="statusDot"></span>
-                <span id="statusText">Ready — tap Start to begin</span>
+                <span id="statusText">Checking...</span>
                 <div class="live-clock" id="liveClock">—</div>
             </div>
 
@@ -3205,7 +3205,7 @@
             DOM.liveTimer.textContent = '00:00';
             DOM.liveAvgSpeed.textContent = '0';
             updateLiveStats();
-            setStatus('Active', '');
+            setStatus('GPS Active |', '');
             if (currentGPSPos) {
                 map.setView(currentGPSPos, 15, { animate: true });
             } else {
@@ -3554,7 +3554,7 @@
                 accuracyCircle.setLatLng(latlng);
                 accuracyCircle.setRadius(pos.coords.accuracy || 0);
                 map.setView(latlng, 15, { animate: true });
-                setStatus('GPS Active', '');
+                setStatus('GPS Active |', '');
             },
             () => onGPSError({ message: 'denied' }),
             { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
