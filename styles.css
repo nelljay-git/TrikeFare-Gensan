@@ -131,14 +131,11 @@ body {
 }
 
 #panel.collapsed {
-    max-height: 350px;
+    max-height: 150px;
     overflow: hidden;
 }
 
-#panel.collapsed .options-row,
-#panel.collapsed .live-stats-row2,
-#panel.collapsed .weak-gps-warning,
-#panel.collapsed .gps-banner {
+#panel.collapsed > *:not(.drag-handle):not(.app-header):not(.status-bar) {
     display: none !important;
 }
 
