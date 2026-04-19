@@ -582,25 +582,36 @@
             updateMapTiles();
         }
 
-        function getTileLayerUrl() {
-            return currentTheme === 'dark'
-                ? 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'
-                : 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png';
-        }
-
         function updateMapTiles() {
-            if (map && tileLayer) {
-                map.removeLayer(tileLayer);
-                tileLayer = L.tileLayer(getTileLayerUrl(), {
+            if (!map) return;
+
+            if (tileLayer) map.removeLayer(tileLayer);
+            if (labelLayer) map.removeLayer(labelLayer);
+
+            if (currentTheme === 'dark') {
+                // Dual layer setup: Dark terrain base + separate label overlay
+                tileLayer = L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_nolabels/{z}/{x}/{y}{r}.png', {
                     maxZoom: 19
                 }).addTo(map);
+
+                // Add labels in a custom pane or default pane above base map
+                labelLayer = L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_only_labels/{z}/{x}/{y}{r}.png', {
+                    maxZoom: 19,
+                    className: 'labels-layer'
+                }).addTo(map);
+            } else {
+                // Single layer setup: Standard OSM with integrated labels
+                tileLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                    maxZoom: 19
+                }).addTo(map);
+                labelLayer = null;
             }
         }
 
         // ============================================================
         // STATE
         // ============================================================
-        let map, userMarker, routeLine, accuracyCircle, tileLayer;
+        let map, userMarker, routeLine, accuracyCircle, tileLayer, labelLayer;
         let watchId = null;
         let isTracking = false;
         let destinationMarker = null;
@@ -631,27 +642,25 @@
                 panel.scrollTop = 0;
             }
 
-            // Smooth map animation
+            // Smooth map animation to maintain current view while resizing
             let start = null;
             const duration = 400; // Match CSS transition
-            const targetPos = (typeof currentGPSPos !== 'undefined' && currentGPSPos) ? currentGPSPos : CONFIG.CENTER;
+
+            if (!map) return;
+            const currentCenter = map.getCenter();
 
             function step(timestamp) {
                 if (!start) start = timestamp;
                 const progress = timestamp - start;
 
-                if (map) {
-                    map.invalidateSize({ pan: false });
-                    map.setView(targetPos, map.getZoom(), { animate: false });
-                }
+                map.invalidateSize({ pan: false });
+                map.setView(currentCenter, map.getZoom(), { animate: false });
 
                 if (progress < duration) {
                     window.requestAnimationFrame(step);
                 } else {
-                    if (map) {
-                        map.invalidateSize();
-                        map.setView(targetPos, map.getZoom(), { animate: true });
-                    }
+                    map.invalidateSize();
+                    map.setView(currentCenter, map.getZoom(), { animate: false });
                 }
             }
             window.requestAnimationFrame(step);
@@ -702,18 +711,29 @@
             searchAbortController = new AbortController();
 
             try {
-                // Broaden search to cover entire General Santos City reliably
-                const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=15&viewbox=125.0,6.3,125.4,5.9&bounded=1`;
+                // Use Photon API for fast, POI-rich autocomplete tailored to General Santos City
+                const url = `https://photon.komoot.io/api/?q=${encodeURIComponent(query)}&lat=6.1164&lon=125.1716&limit=15`;
                 const res = await fetch(url, { signal: searchAbortController.signal });
                 const data = await res.json();
 
-                if (data.length === 0) {
+                if (!data.features || data.features.length === 0) {
                     DOM.mapSearchResults.innerHTML = `<div class="search-result-item" style="text-align:center; color:var(--danger)">No results found</div>`;
                 } else {
-                    DOM.mapSearchResults.innerHTML = data.map((item) => {
-                        const name = item.name || item.display_name.split(',')[0];
-                        const address = item.display_name;
-                        return `<div class="search-result-item" onclick="selectDestination(${item.lat}, ${item.lon}, '${name.replace(/'/g, "\\\'")}')">
+                    DOM.mapSearchResults.innerHTML = data.features.map((feature) => {
+                        const p = feature.properties;
+                        const lat = feature.geometry.coordinates[1];
+                        const lon = feature.geometry.coordinates[0];
+
+                        const name = p.name || p.street || p.city || "Unknown Location";
+                        const addressParts = [];
+                        if (p.name && p.street) addressParts.push(p.street);
+                        if (p.district) addressParts.push(p.district);
+                        if (p.city) addressParts.push(p.city);
+                        if (p.state) addressParts.push(p.state);
+
+                        const address = addressParts.length > 0 ? addressParts.join(', ') : (p.country || 'Philippines');
+
+                        return `<div class="search-result-item" onclick="selectDestination(${lat}, ${lon}, '${name.replace(/'/g, "\\\'")}')">
                       <div class="search-result-name">${name}</div>
                       <div class="search-result-address">${address}</div>
                     </div>`;
@@ -1314,11 +1334,9 @@
                 center: CONFIG.CENTER, zoom: 14,
                 zoomControl: true, attributionControl: false
             });
-            tileLayer = L.tileLayer(getTileLayerUrl(), {
-                maxZoom: 19
-            }).addTo(map);
+            updateMapTiles();
             L.control.attribution({ prefix: false, position: 'bottomright' })
-                .addAttribution('© OpenStreetMap · CartoDB')
+                .addAttribution('&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>')
                 .addTo(map);
 
             const markerIcon = L.divIcon({
