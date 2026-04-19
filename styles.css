@@ -127,16 +127,23 @@ body {
     max-height: 55vh;
     overflow-y: auto;
     box-shadow: 0 -10px 40px rgba(0, 0, 0, .5);
-    transition: max-height 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
+    transition: max-height 0.4s cubic-bezier(0.25, 0.8, 0.25, 1), padding-bottom 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
 }
 
 #panel.collapsed {
-    max-height: 150px;
+    max-height: 125px;
+    padding-bottom: 16px;
     overflow: hidden;
 }
 
+#panel > *:not(.drag-handle):not(.app-header):not(.status-bar) {
+    transition: opacity 0.3s ease, visibility 0.3s ease;
+}
+
 #panel.collapsed > *:not(.drag-handle):not(.app-header):not(.status-bar) {
-    display: none !important;
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
 }
 
 #panel::-webkit-scrollbar {
