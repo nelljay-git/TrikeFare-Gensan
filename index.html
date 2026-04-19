@@ -80,6 +80,11 @@
                     <span class="sidebar-item-icon"><i class="fa-solid fa-circle-info"></i></span>
                     <span>Fare Guide</span>
                 </div>
+                <div class="sidebar-item" onclick="openDonateModal(); closeSidebar()"
+                    style="background: rgba(255, 184, 0, 0.15); color: #f0a500; margin-top: auto;">
+                    <span class="sidebar-item-icon"><i class="fa-solid fa-mug-hot"></i></span>
+                    <span style="font-weight: 700;">Buy Me a Coffee</span>
+                </div>
             </div>
         </div>
 
@@ -414,6 +419,34 @@
             </div>
         </div>
     </div>
+    </div>
+
+    <!-- DONATE MODAL -->
+    <div class="modal-overlay" id="donateModalOverlay" onclick="if(event.target===this) closeDonateModal()">
+        <div class="fare-modal" id="donateModal">
+            <div class="modal-header">
+                <div>
+                    <div class="modal-title" style="color: #f0a500;"><i class="fa-solid fa-mug-hot"></i> Support the App
+                    </div>
+                    <div class="modal-subtext">Help keep TrikeFare Gensan running</div>
+                </div>
+                <button class="btn-close" onclick="closeDonateModal()">×</button>
+            </div>
+            <div class="modal-content"
+                style="text-align: center; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 16px; padding-bottom: 20px;">
+                <img id="donateQrImg" src="qr_donate.jfif" alt="Donate QR Code"
+                    style="width: 300px; max-width: 100%; border-radius: 12px; box-shadow: 0 8px 25px rgba(0,0,0,0.15); cursor: zoom-in; transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); position: relative;"
+                    onclick="this.style.transform = this.style.transform === 'scale(1.4)' ? 'scale(1)' : 'scale(1.4)'; this.style.zIndex = this.style.transform === 'scale(1.4)' ? '10' : '1'; this.style.cursor = this.style.transform === 'scale(1.4)' ? 'zoom-out' : 'zoom-in';">
+                <div style="font-size: 0.95rem; color: var(--text); font-weight: 700;">
+                    Scan via GCash or Maya
+                </div>
+                <div
+                    style="font-size: 0.8rem; color: var(--text-dim); font-style: italic; max-width: 280px; line-height: 1.5;">
+                    "Thank you for your support! Every coffee helps!"
+                </div>
+            </div>
+        </div>
+    </div>
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script>
@@ -428,6 +461,20 @@
         function closeSidebar() {
             document.getElementById('sidebarOverlay').classList.remove('show');
             document.getElementById('sidebar').classList.remove('show');
+        }
+
+        function openDonateModal() {
+            document.getElementById('donateModalOverlay').classList.add('show');
+        }
+
+        function closeDonateModal() {
+            document.getElementById('donateModalOverlay').classList.remove('show');
+            const img = document.getElementById('donateQrImg');
+            if (img) {
+                img.style.transform = 'scale(1)';
+                img.style.zIndex = '1';
+                img.style.cursor = 'zoom-in';
+            }
         }
 
         // ============================================================
@@ -487,7 +534,8 @@
                 'longpressRing',
                 'destFareCard', 'destFareName', 'destFareDist', 'destFareETA', 'destFareCost', 'destFareBreakdown',
                 'fixedFareAmount', 'btnClearFixed', 'btnLocateDest', 'btnMarkMode', 'markModeHint',
-                'historyModalOverlay', 'historyModal', 'btnDismissDest', 'liveClock'
+                'historyModalOverlay', 'historyModal', 'btnDismissDest', 'liveClock',
+                'donateModalOverlay', 'donateModal', 'donateQrImg'
             ].forEach(id => { DOM[id] = document.getElementById(id); });
             updateClock();
         }
