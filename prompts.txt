@@ -1,0 +1,38 @@
+Improve this prompt:
+
+I want a feature like lets say the user is tracking a route without marking a location and the user stops tracking i want it like show the community data with the top fare shown based on its recorded est kilometers and the credententials of the area like will base on name, lat, lng so the user will know how much to pay fare on that area based on its est distance recorder from the tracking
+
+Affect files:
+- 
+
+1. index.php
+2. index_beta.php
+3. (Add more if needed)
+
+{ Enhance the fare submission logic with a smart deduplication and voting system:
+
+When a user submits a new fare, the system should first check for existing fares that match the same origin–destination pair within a defined distance threshold (based on the user’s estimated location and route distance).
+
+If an existing fare is found where:
+
+The fare amount is equal to the submitted fare, and
+The distance difference falls within the acceptable threshold range (e.g., ±1–4 km from the user’s estimated trip distance),
+
+Then:
+
+Do not insert a new fare entry
+Instead, automatically register this submission as an upvote to the matching top (or most relevant) fare
+
+Additional requirements:
+
+Prioritize the top suggested fare (e.g., highest upvotes or closest match) when multiple matches exist
+Ensure the comparison accounts for floating-point precision in distance and fare values
+Prevent duplicate voting by the same user (based on username/session/IP)
+If no matching fare is found within the threshold, proceed with normal fare insertion
+
+Goal:
+
+Reduce duplicate fare entries
+Strengthen community-driven accuracy through vote aggregation
+Keep the dataset clean and relevant to the user’s location context
+}

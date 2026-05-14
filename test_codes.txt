@@ -1,0 +1,20 @@
+For distance changing:
+
+// 1. Reset any previous state and set an initial position
+rideDetectionModalShown = false; 
+untrackedDistance = 0;
+onPosition({ 
+    coords: { latitude: 6.1164, longitude: 125.1716, accuracy: 10 }, 
+    timestamp: Date.now() - 15000 
+});
+
+console.log("Initial position set. Waiting 15 seconds to simulate movement...");
+
+// 2. Simulate moving ~220 meters 15 seconds later (approx 53 km/h)
+setTimeout(() => {
+    onPosition({ 
+        coords: { latitude: 6.1184, longitude: 125.1716, accuracy: 10 }, 
+        timestamp: Date.now() 
+    });
+    console.log("Movement detected! Modal should appear now.");
+}, 2000);

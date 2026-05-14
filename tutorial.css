@@ -1,0 +1,705 @@
+/* ============================================================
+   TRIKEFARE TUTORIAL SYSTEM — tutorial.css
+   Modular, theme-aware, mobile-first onboarding styles
+   ============================================================ */
+
+/* ---------- OVERLAY & SPOTLIGHT ---------- */
+#tut-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 99000;
+    pointer-events: none;
+    transition: opacity 0.35s ease;
+    opacity: 0;
+}
+
+#tut-overlay.tut-visible {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+/* SVG spotlight mask fills the full viewport */
+#tut-svg-mask {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+}
+
+/* The dark dim rect */
+#tut-dim-rect {
+    fill: rgba(0, 0, 0, 0.72);
+}
+
+/* The cut-out spotlight hole — rendered via SVG mask */
+#tut-spotlight-hole {
+    fill: white;
+    /* white = transparent in mask */
+    rx: 14;
+    transition: x 0.4s cubic-bezier(0.25, 0.8, 0.25, 1),
+        y 0.4s cubic-bezier(0.25, 0.8, 0.25, 1),
+        width 0.4s cubic-bezier(0.25, 0.8, 0.25, 1),
+        height 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
+}
+
+/* Animated ring around the spotlight */
+#tut-spotlight-ring {
+    fill: none;
+    stroke: var(--primary, #00d4aa);
+    stroke-width: 2.5;
+    stroke-dasharray: 6 4;
+    opacity: 0.85;
+    filter: drop-shadow(0 0 6px var(--primary, #00d4aa));
+    animation: tut-ring-spin 12s linear infinite;
+}
+
+@keyframes tut-ring-spin {
+    from {
+        stroke-dashoffset: 0;
+    }
+
+    to {
+        stroke-dashoffset: -200;
+    }
+}
+
+/* Click-through area for the highlighted element */
+#tut-click-shield {
+    position: absolute;
+    pointer-events: none;
+    /* let the highlighted element stay clickable */
+    border-radius: 14px;
+    transition: all 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
+}
+
+/* ---------- TOOLTIP CARD ---------- */
+#tut-tooltip {
+    position: fixed;
+    z-index: 99100;
+    width: min(340px, 92vw);
+    background: var(--surface, #131829);
+    border: 1px solid var(--border, #2a3050);
+    border-radius: 18px;
+    padding: 20px 20px 16px;
+    box-shadow:
+        0 24px 60px rgba(0, 0, 0, 0.55),
+        0 0 0 1px rgba(255, 255, 255, 0.04),
+        inset 0 1px 0 rgba(255, 255, 255, 0.06);
+    pointer-events: auto;
+    transition: opacity 0.28s ease, transform 0.28s cubic-bezier(0.25, 0.8, 0.25, 1),
+        left 0.38s cubic-bezier(0.25, 0.8, 0.25, 1),
+        top 0.38s cubic-bezier(0.25, 0.8, 0.25, 1);
+    opacity: 0;
+    transform: translateY(10px) scale(0.97);
+}
+
+#tut-tooltip.tut-tt-visible {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+}
+
+/* Accent top border */
+#tut-tooltip::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 16px;
+    right: 16px;
+    height: 2px;
+    background: linear-gradient(90deg, var(--primary, #00d4aa), var(--accent, #6c5ce7));
+    border-radius: 0 0 2px 2px;
+}
+
+/* Step counter pill */
+#tut-step-counter {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.67rem;
+    font-weight: 700;
+    letter-spacing: 0.6px;
+    text-transform: uppercase;
+    color: var(--primary, #00d4aa);
+    background: var(--primary-glow, #00d4aa22);
+    border: 1px solid var(--primary-glow, #00d4aa33);
+    padding: 3px 10px;
+    border-radius: 20px;
+    margin-bottom: 10px;
+}
+
+/* Icon badge */
+#tut-icon {
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    background: linear-gradient(135deg, var(--primary-glow, #00d4aa22), var(--accent-glow, #6c5ce733));
+    border: 1px solid var(--border, #2a3050);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.05rem;
+    color: var(--primary, #00d4aa);
+    margin-bottom: 10px;
+    flex-shrink: 0;
+}
+
+/* Title */
+#tut-title {
+    font-size: 1rem;
+    font-weight: 800;
+    color: var(--text, #e8ecf4);
+    margin-bottom: 6px;
+    line-height: 1.3;
+}
+
+/* Description */
+#tut-desc {
+    font-size: 0.82rem;
+    color: var(--text-dim, #8892a8);
+    line-height: 1.6;
+    margin-bottom: 16px;
+}
+
+/* Tip block inside tooltip */
+.tut-tip {
+    background: rgba(0, 212, 170, 0.07);
+    border: 1px solid rgba(0, 212, 170, 0.2);
+    border-radius: 8px;
+    padding: 8px 10px;
+    font-size: 0.75rem;
+    color: var(--primary, #00d4aa);
+    margin-bottom: 14px;
+    display: flex;
+    align-items: flex-start;
+    gap: 7px;
+    line-height: 1.5;
+}
+
+.tut-tip i {
+    flex-shrink: 0;
+    margin-top: 1px;
+}
+
+/* Progress dots */
+#tut-progress-dots {
+    display: flex;
+    gap: 5px;
+    align-items: center;
+    margin-bottom: 14px;
+}
+
+.tut-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--border, #2a3050);
+    transition: all 0.3s ease;
+    cursor: pointer;
+}
+
+.tut-dot.active {
+    width: 18px;
+    border-radius: 4px;
+    background: linear-gradient(90deg, var(--primary, #00d4aa), var(--accent, #6c5ce7));
+}
+
+.tut-dot.done {
+    background: var(--primary-dark, #00a885);
+    opacity: 0.6;
+}
+
+/* ---------- CONTROLS ---------- */
+#tut-controls {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+#tut-btn-back {
+    background: var(--card, #1a2035);
+    border: 1px solid var(--border, #2a3050);
+    color: var(--text-dim, #8892a8);
+    border-radius: 10px;
+    padding: 8px 14px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    cursor: pointer;
+    font-family: inherit;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+#tut-btn-back:hover {
+    border-color: var(--text-muted, #5a6478);
+    color: var(--text, #e8ecf4);
+}
+
+#tut-btn-back:disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
+}
+
+#tut-btn-next {
+    flex: 1;
+    background: linear-gradient(135deg, var(--primary, #00d4aa), var(--primary-dark, #00a885));
+    border: none;
+    color: #000;
+    border-radius: 10px;
+    padding: 10px 16px;
+    font-size: 0.85rem;
+    font-weight: 800;
+    cursor: pointer;
+    font-family: inherit;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+    box-shadow: 0 4px 16px var(--primary-glow, #00d4aa33);
+}
+
+#tut-btn-next:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 6px 22px var(--primary-glow, #00d4aa44);
+}
+
+#tut-btn-next:active {
+    transform: translateY(0);
+}
+
+/* Finish button variant */
+#tut-btn-next.tut-finish {
+    background: linear-gradient(135deg, var(--accent, #6c5ce7), #5a4bd1);
+    box-shadow: 0 4px 16px rgba(108, 92, 231, 0.4);
+    color: #fff;
+}
+
+/* ---------- SKIP BUTTON ---------- */
+#tut-btn-skip {
+    position: fixed;
+    top: 16px;
+    right: 16px;
+    z-index: 99200;
+    background: rgba(20, 24, 40, 0.88);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border: 1px solid var(--border, #2a3050);
+    color: var(--text-dim, #8892a8);
+    border-radius: 20px;
+    padding: 6px 14px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    cursor: pointer;
+    font-family: inherit;
+    display: none;
+    align-items: center;
+    gap: 6px;
+    transition: all 0.2s;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+}
+
+#tut-btn-skip.tut-visible {
+    display: flex;
+}
+
+#tut-btn-skip:hover {
+    color: var(--danger, #ff6b6b);
+    border-color: var(--danger, #ff6b6b);
+    background: rgba(255, 107, 107, 0.1);
+}
+
+/* ---------- WELCOME SCREEN ---------- */
+#tut-welcome {
+    position: fixed;
+    inset: 0;
+    z-index: 99300;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    background: rgba(0, 0, 0, 0.75);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+}
+
+#tut-welcome.tut-visible {
+    display: flex;
+    animation: tut-fade-in 0.4s ease;
+}
+
+@keyframes tut-fade-in {
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
+}
+
+#tut-welcome-card {
+    background: var(--surface, #131829);
+    border: 1px solid var(--border, #2a3050);
+    border-radius: 24px;
+    padding: 32px 28px 28px;
+    max-width: 380px;
+    width: 100%;
+    text-align: center;
+    box-shadow: 0 32px 80px rgba(0, 0, 0, 0.6);
+    animation: tut-slide-up 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
+    position: relative;
+    overflow: hidden;
+}
+
+#tut-welcome-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, var(--primary, #00d4aa), var(--accent, #6c5ce7), var(--primary, #00d4aa));
+    background-size: 200%;
+    animation: tut-shimmer 3s linear infinite;
+}
+
+@keyframes tut-shimmer {
+    from {
+        background-position: 0%;
+    }
+
+    to {
+        background-position: 200%;
+    }
+}
+
+@keyframes tut-slide-up {
+    from {
+        opacity: 0;
+        transform: translateY(30px) scale(0.95);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+#tut-welcome-logo {
+    width: 72px;
+    height: 72px;
+    border-radius: 20px;
+    background: linear-gradient(135deg, var(--primary, #00d4aa), var(--accent, #6c5ce7));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2rem;
+    margin: 0 auto 20px;
+    box-shadow: 0 8px 30px var(--primary-glow, #00d4aa33);
+}
+
+#tut-welcome h2 {
+    font-size: 1.4rem;
+    font-weight: 800;
+    background: linear-gradient(135deg, var(--primary, #00d4aa), var(--accent, #6c5ce7));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    margin-bottom: 8px;
+}
+
+#tut-welcome-sub {
+    font-size: 0.85rem;
+    color: var(--text-dim, #8892a8);
+    line-height: 1.6;
+    margin-bottom: 24px;
+}
+
+.tut-feature-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-bottom: 24px;
+    text-align: left;
+}
+
+.tut-feature-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background: var(--card, #1a2035);
+    border: 1px solid var(--border, #2a3050);
+    border-radius: 12px;
+    padding: 10px 14px;
+    font-size: 0.82rem;
+    color: var(--text, #e8ecf4);
+    font-weight: 500;
+}
+
+.tut-feature-item .fi-icon {
+    width: 30px;
+    height: 30px;
+    border-radius: 8px;
+    background: var(--primary-glow, #00d4aa22);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.85rem;
+    color: var(--primary, #00d4aa);
+    flex-shrink: 0;
+}
+
+.tut-welcome-btn-row {
+    display: flex;
+    gap: 10px;
+}
+
+#tut-btn-start-tour {
+    flex: 1;
+    background: linear-gradient(135deg, var(--primary, #00d4aa), var(--primary-dark, #00a885));
+    border: none;
+    color: #000;
+    border-radius: 12px;
+    padding: 13px;
+    font-size: 0.9rem;
+    font-weight: 800;
+    cursor: pointer;
+    font-family: inherit;
+    transition: all 0.2s;
+    box-shadow: 0 4px 20px var(--primary-glow, #00d4aa33);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+}
+
+#tut-btn-start-tour:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 28px var(--primary-glow, #00d4aa44);
+}
+
+#tut-btn-skip-welcome {
+    background: var(--card, #1a2035);
+    border: 1px solid var(--border, #2a3050);
+    color: var(--text-dim, #8892a8);
+    border-radius: 12px;
+    padding: 13px 16px;
+    font-size: 0.82rem;
+    font-weight: 600;
+    cursor: pointer;
+    font-family: inherit;
+    transition: all 0.2s;
+}
+
+#tut-btn-skip-welcome:hover {
+    border-color: var(--danger, #ff6b6b);
+    color: var(--danger, #ff6b6b);
+}
+
+/* ---------- HELP FAB ---------- */
+#tut-help-fab {
+    position: fixed;
+    bottom: 24px;
+    left: 16px;
+    z-index: 9000;
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--primary, #00d4aa), var(--accent, #6c5ce7));
+    border: none;
+    color: #fff;
+    font-size: 1rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 20px rgba(0, 212, 170, 0.4);
+    transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+    font-family: inherit;
+}
+
+#tut-help-fab:hover {
+    transform: scale(1.12);
+    box-shadow: 0 8px 28px rgba(0, 212, 170, 0.5);
+}
+
+#tut-help-fab:active {
+    transform: scale(0.95);
+}
+
+/* FAB tooltip label */
+#tut-help-fab::after {
+    content: attr(data-label);
+    position: absolute;
+    left: calc(100% + 10px);
+    top: 50%;
+    transform: translateY(-50%);
+    background: var(--surface, #131829);
+    border: 1px solid var(--border, #2a3050);
+    color: var(--text, #e8ecf4);
+    font-size: 0.72rem;
+    font-weight: 700;
+    white-space: nowrap;
+    padding: 4px 10px;
+    border-radius: 8px;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s;
+}
+
+#tut-help-fab:hover::after {
+    opacity: 1;
+}
+
+/* ---------- ARROW POINTER ---------- */
+.tut-arrow {
+    position: fixed;
+    z-index: 99150;
+    width: 0;
+    height: 0;
+    pointer-events: none;
+    transition: all 0.38s cubic-bezier(0.25, 0.8, 0.25, 1);
+}
+
+.tut-arrow.tut-arrow-up {
+    border-left: 10px solid transparent;
+    border-right: 10px solid transparent;
+    border-bottom: 12px solid var(--surface, #131829);
+}
+
+.tut-arrow.tut-arrow-down {
+    border-left: 10px solid transparent;
+    border-right: 10px solid transparent;
+    border-top: 12px solid var(--surface, #131829);
+}
+
+/* ---------- DONE SCREEN ---------- */
+#tut-done {
+    position: fixed;
+    inset: 0;
+    z-index: 99300;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    background: rgba(0, 0, 0, 0.75);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+}
+
+#tut-done.tut-visible {
+    display: flex;
+    animation: tut-fade-in 0.4s ease;
+}
+
+#tut-done-card {
+    background: var(--surface, #131829);
+    border: 1px solid var(--primary, #00d4aa);
+    border-radius: 24px;
+    padding: 36px 28px 28px;
+    max-width: 360px;
+    width: 100%;
+    text-align: center;
+    box-shadow: 0 32px 80px rgba(0, 0, 0, 0.6), 0 0 40px var(--primary-glow, #00d4aa22);
+    animation: tut-slide-up 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
+}
+
+#tut-done-icon {
+    font-size: 3rem;
+    margin-bottom: 16px;
+    animation: tut-bounce 0.6s 0.2s cubic-bezier(0.25, 0.8, 0.25, 1) both;
+}
+
+@keyframes tut-bounce {
+    from {
+        transform: scale(0.3);
+        opacity: 0;
+    }
+
+    60% {
+        transform: scale(1.2);
+    }
+
+    to {
+        transform: scale(1);
+        opacity: 1;
+    }
+}
+
+#tut-done h2 {
+    font-size: 1.3rem;
+    font-weight: 800;
+    color: var(--text, #e8ecf4);
+    margin-bottom: 8px;
+}
+
+#tut-done p {
+    font-size: 0.83rem;
+    color: var(--text-dim, #8892a8);
+    line-height: 1.6;
+    margin-bottom: 24px;
+}
+
+#tut-btn-done {
+    width: 100%;
+    background: linear-gradient(135deg, var(--primary, #00d4aa), var(--primary-dark, #00a885));
+    border: none;
+    color: #000;
+    border-radius: 12px;
+    padding: 14px;
+    font-size: 0.9rem;
+    font-weight: 800;
+    cursor: pointer;
+    font-family: inherit;
+    transition: all 0.2s;
+    box-shadow: 0 4px 20px var(--primary-glow, #00d4aa33);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+}
+
+#tut-btn-done:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 28px var(--primary-glow, #00d4aa44);
+}
+
+/* ---------- PULSE HINT ON HIGHLIGHTED ELEMENT ---------- */
+/* NOTE: Do NOT set position:relative here — it breaks absolutely-positioned
+   elements like .locate-btn by pulling them into normal flow. */
+.tut-highlight-pulse {
+    outline: 3px solid var(--primary, #00d4aa) !important;
+    outline-offset: 3px !important;
+    box-shadow: 0 0 0 6px var(--primary-glow, #00d4aa22), 0 0 24px var(--primary-glow, #00d4aa33) !important;
+    border-radius: 10px;
+    animation: tut-pulse-border 1.8s ease-in-out infinite !important;
+    transition: none !important;
+    z-index: 99050 !important;
+}
+
+@keyframes tut-pulse-border {
+
+    0%,
+    100% {
+        outline-color: var(--primary, #00d4aa);
+        box-shadow: 0 0 0 4px var(--primary-glow, #00d4aa22);
+    }
+
+    50% {
+        outline-color: var(--accent, #6c5ce7);
+        box-shadow: 0 0 0 8px rgba(108, 92, 231, 0.15);
+    }
+}
+
+/* ---------- RESPONSIVE ---------- */
+@media (max-width: 400px) {
+    #tut-tooltip {
+        width: 96vw;
+        padding: 16px 14px 12px;
+    }
+
+    #tut-welcome-card {
+        padding: 24px 18px 20px;
+    }
+}

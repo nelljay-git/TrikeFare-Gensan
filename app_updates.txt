@@ -1,0 +1,57 @@
+Last file edited with description of the changes made:
+
+format to follow (make it friendly readable and concise)
+
+ {filename}
+ {Patch note}
+ {Description of changes made}
+ {Time and date of edit}
+
+ {sw.js}
+ {Map Caching & Offline Support}
+ {Enabled persistent caching for OpenStreetMap tiles using a Stale-While-Revalidate strategy. Added index_beta.php to the cache and improved navigation fallbacks for offline reliability.}
+ {2026-04-28 01:25}
+
+
+index_beta.php: Updated the ride detection modal to include a "Not now" button.
+- Added a button to close the ride detection modal without starting ride tracking.
+- Improved button styling and layout for better user experience.
+
+ {filename: generate_username.php, index.php, index_beta.php, community.php}
+ {Automatic Username Generation}
+ {Implemented automatic username generation in the format user####. Usernames are now assigned automatically on first visit and stored in a new database table to ensure uniqueness. Removed all manual nickname prompts.}
+ {2026-04-28 01:49}
+ {filename: index.php, index_beta.php}
+ {Ride State Reset}
+ {The recent ride data (tracked path, distance, and results card) is now automatically reset after a successful fare submission, streamlining the workflow for consecutive rides.}
+ {2026-04-28 02:01}
+
+ {filename: api/auth/*, index.php, index_beta.php, community.php}
+ {User Account & Streak System}
+ {Introduced a full membership system with Login and Sign Up. Features include automatic ride history synchronization to the cloud and a daily commute streak counter to encourage regular use. Gated community interactions behind user accounts to improve security and engagement.}
+ {2026-04-28 02:25}
+
+ {filename: api/fetch_history.php, components/auth_js.php}
+ {Two-Way Cloud Synchronization}
+ {Implemented automatic downloading of ride history from the cloud when a user logs in. The system intelligently merges local and cloud history using exact timestamps, ensuring seamless cross-device history restoration. Added a 3-second delay toast notification upon successful cloud backup.}
+ {2026-04-28 02:58}
+ 
+ {filename: api/fetch_history.php, api/sync_history.php, api/delete_history.php, components/auth_js.php, index.php, index_beta.php}
+ {Canonical Cloud Sync & Immutable History}
+ {Transitioned to an immutable history architecture using unique `ride_uuid` identifiers. Replaced the 'Delete-and-Reinsert' sync model with an 'UPSERT' logic that preserves the original creation timestamp permanently. This ensures ride times never shift or change regardless of sync frequency. Added automatic background sync restoration and granular single-entry deletion using GPS path fingerprints.}
+ {2026-04-28 04:12}
+ 
+ {filename: components/auth_modal.php, components/auth_js.php, api/db.php, api/auth/login.php}
+ {Persistent Login & Session Extension}
+ {Added a "Stay logged in" option to the login modal. When selected, the session cookie and server-side session data are extended to 30 days, preventing users from being logged out when closing the browser.}
+ {2026-04-29 02:10}
+ 
+ {filename: index.php, index_beta.php}
+ {Manual History Reload}
+ {Added a "Reload" button next to the Sync button in the Ride History modal. This allows users to manually pull their latest ride data from the cloud without needing to log out and back in.}
+ {2026-04-29 02:20}
+ 
+ {filename: index.php, index_beta.php, components/offline_sync.js, styles.css}
+ {Robust Offline Mode & Background Sync}
+ {Implemented a comprehensive offline architecture including a "You are offline" top banner. Features include a unified SyncQueue that captures failed history syncs and community fare submissions while disconnected. All pending data is automatically synchronized in the background once internet connectivity is restored.}
+ {2026-04-29 02:30}
